@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "id": "kenhara.sparklekeys",
+  "name": "Sparklekeys",
+  "version": "0.1.0",
+  "author": "Harris Kenny",
+  "license": "MIT",
+  "description": "Letter Hunt typing tutor for a first keyboard. Earn stars, dress a pack-driven character in the Closet. Unicorn default; dragon stub. Local only.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "keywords": [
+    "sparklekeys",
+    "typing",
+    "typing tutor",
+    "letter hunt",
+    "letters",
+    "keyboard",
+    "kids",
+    "child",
+    "unicorn",
+    "dragon",
+    "stars",
+    "closet",
+    "cosmetics",
+    "learn to type",
+    "alphabet"
+  ],
+  "barWidget": {
+    "displayName": "Sparklekeys",
+    "description": "Letter Hunt for a first keyboard. Stars, Closet, pack-driven character. Local only.",
+    "category": "Widgets",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "characterPack": "unicorn",
+      "letterCase": "upper",
+      "startMode": "letters",
+      "dailyGoal": 20,
+      "showStarsOnBar": true,
+      "soundEnabled": false
+    },
+    "schema": [
+      {
+        "key": "characterPack",
+        "type": "enum",
+        "label": "Character pack",
+        "description": "The character and theme world. Unicorn is the v1 default; dragon is a stub to prove pack-swap. Girl/boy variants are pack choices, not code branches.",
+        "options": [
+          "unicorn",
+          "dragon"
+        ],
+        "defaultValue": "unicorn"
+      },
+      {
+        "key": "letterCase",
+        "type": "enum",
+        "label": "Letter case",
+        "description": "How target letters are shown. Matching is always case-insensitive (no Shift required).",
+        "options": [
+          "upper",
+          "lower"
+        ],
+        "defaultValue": "upper"
+      },
+      {
+        "key": "startMode",
+        "type": "enum",
+        "label": "Start mode",
+        "description": "Letter Hunt (one letter) or Word Mode (short pack words).",
+        "options": [
+          "letters",
+          "words"
+        ],
+        "defaultValue": "letters"
+      },
+      {
+        "key": "dailyGoal",
+        "type": "integer",
+        "label": "Daily letter goal",
+        "description": "Correct letters in a local day for the +5 star bonus celebration.",
+        "min": 5,
+        "max": 200,
+        "step": 5,
+        "defaultValue": 20
+      },
+      {
+        "key": "showStarsOnBar",
+        "type": "boolean",
+        "label": "Show stars on bar",
+        "description": "Show the star balance next to the character on the bar chip.",
+        "defaultValue": true
+      },
+      {
+        "key": "soundEnabled",
+        "type": "boolean",
+        "label": "Sound (reserved)",
+        "description": "Reserved for optional celebratory audio. Off in v1 — no bundled audio yet.",
+        "defaultValue": false
+      }
+    ],
+    "aliases": [
+      "sparklekeys",
+      "letter hunt",
+      "typing tutor",
+      "unicorn",
+      "keyboard",
+      "stars",
+      "closet"
+    ]
+  }
+}

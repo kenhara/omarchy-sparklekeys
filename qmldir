@@ -1,0 +1,11 @@
+# Sparklekeys — local module types.
+# Prefer instantiating SparkleStore from BarWidget and injecting into Panel.
+# Do not import "." from Panel (shadows qs.Ui Panel under Loader).
+SparkleStore 1.0 SparkleStore.qml
+PackLibrary 1.0 PackLibrary.qml
+PlayView 1.0 PlayView.qml
+ClosetView 1.0 ClosetView.qml
+CharacterView 1.0 CharacterView.qml
+KeyboardHint 1.0 KeyboardHint.qml
+Celebration 1.0 Celebration.qml
+StarCounter 1.0 StarCounter.qml
