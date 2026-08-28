@@ -1,8 +1,8 @@
 import QtQuick
 import qs.Commons
 
-// Dressing room: large CharacterView as the hero. Hunt is gone.
-// Look / Hat / Friend cards sit under the character. Back to hunt is the door.
+// Friends room: themed emoji boards. Hunt is gone.
+// Unlocks are level-gated. Tap an unlocked friend to wear it on the bar chip.
 Item {
   id: root
 
@@ -14,7 +14,27 @@ Item {
   property color aura: "#ff9ad5"
   property string fontFamily: "monospace"
 
-  readonly property int heroSize: Style.space(200)
+  readonly property int rev: store ? store.boardRev : 0
+  readonly property string boardTitle: {
+    var _ = root.rev
+    return store ? String(store.currentBoardTitle || "Friends") : "Friends"
+  }
+  readonly property var friends: {
+    var _ = root.rev
+    return store && store.currentBoardFriends ? store.currentBoardFriends : []
+  }
+  readonly property bool canPrev: {
+    var _ = root.rev
+    return store ? !!store.canPrevBoard : false
+  }
+  readonly property bool canNext: {
+    var _ = root.rev
+    return store ? !!store.canNextBoard : false
+  }
+  readonly property int nextLevel: {
+    var _ = root.rev
+    return store ? Math.max(0, Number(store.nextBoardLevel) || 0) : 0
+  }
 
   implicitHeight: roomCol.implicitHeight
 
@@ -23,26 +43,20 @@ Item {
     width: root.width
     spacing: Style.space(12)
 
-    CharacterView {
-      store: root.store
-      opened: root.opened
-      foreground: root.foreground
-      fontFamily: root.fontFamily
-      tappable: false
-      glyphPx: Style.font.body * 5.4
-      implicitWidth: root.heroSize
-      implicitHeight: root.heroSize
-      width: implicitWidth
-      height: implicitHeight
-      anchors.horizontalCenter: parent.horizontalCenter
+    Text {
+      width: parent.width
+      text: root.boardTitle
+      textFormat: Text.PlainText
+      color: root.foreground
+      font.family: root.fontFamily
+      font.pixelSize: Style.font.body
+      font.bold: true
+      horizontalAlignment: Text.AlignHCenter
     }
 
     Text {
       width: parent.width
-      text: {
-        var pack = store && store.packDisplayName ? String(store.packDisplayName).toLowerCase() : "unicorn"
-        return "Buy a look. It stays on your " + pack + "."
-      }
+      text: "New friends show up as you level up."
       textFormat: Text.PlainText
       color: root.foreground
       opacity: 0.5
@@ -52,30 +66,100 @@ Item {
       horizontalAlignment: Text.AlignHCenter
     }
 
-    BackPill {
-      anchors.horizontalCenter: parent.horizontalCenter
+    Item {
+      width: parent.width
+      height: navRow.implicitHeight
+
+      Row {
+        id: navRow
+        anchors.horizontalCenter: parent.horizontalCenter
+        spacing: Style.space(10)
+
+        NavPill {
+          label: "Prev"
+          tappable: root.canPrev
+          onClicked: if (store) store.prevBoard()
+        }
+
+        NavPill {
+          label: root.canNext ? "Next" : (root.nextLevel > 0 ? ("Lv " + root.nextLevel) : "Next")
+          tappable: root.canNext
+          onClicked: if (store) store.nextBoard()
+        }
+      }
+    }
+
+    Text {
+      width: parent.width
+      visible: !root.canNext && root.nextLevel > 0
+      height: visible ? implicitHeight : 0
+      text: "keep practicing"
+      textFormat: Text.PlainText
+      color: root.dimForeground
+      font.family: root.fontFamily
+      font.pixelSize: Style.font.caption
+      horizontalAlignment: Text.AlignHCenter
     }
 
     Row {
-      id: shop
+      id: tileRow
       width: parent.width
-      spacing: Style.space(10)
+      spacing: Style.space(8)
 
-      CategoryBlock {
-        title: "Look"
-        category: "skins"
-        model: store ? store.closetSkins : []
+      Repeater {
+        model: root.friends
+        delegate: FriendTile {
+          required property var modelData
+          item: modelData
+          width: Math.max(
+            Style.space(56),
+            Math.floor((tileRow.width - tileRow.spacing * 4) / 5))
+        }
       }
-      CategoryBlock {
-        title: "Hat"
-        category: "hats"
-        model: store ? store.closetHats : []
-      }
-      CategoryBlock {
-        title: "Friend"
-        category: "companions"
-        model: store ? store.closetCompanions : []
-      }
+    }
+
+    BackPill {
+      anchors.horizontalCenter: parent.horizontalCenter
+    }
+  }
+
+  component NavPill: Rectangle {
+    id: nav
+    property string label: ""
+    property bool tappable: true
+    signal clicked()
+    readonly property bool hovered: nav.tappable && navMa.containsMouse
+    implicitWidth: Math.max(Style.space(56), navLabel.implicitWidth + Style.space(18))
+    implicitHeight: Style.space(28)
+    width: implicitWidth
+    height: implicitHeight
+    radius: height / 2
+    opacity: nav.tappable ? 1 : 0.4
+    color: nav.hovered
+      ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.28)
+      : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.08)
+    border.width: 1
+    border.color: nav.tappable
+      ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.45)
+      : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.16)
+
+    Text {
+      id: navLabel
+      anchors.centerIn: parent
+      text: nav.label
+      textFormat: Text.PlainText
+      color: root.foreground
+      font.family: root.fontFamily
+      font.pixelSize: Style.font.bodySmall
+      font.bold: nav.tappable
+    }
+    MouseArea {
+      id: navMa
+      anchors.fill: parent
+      enabled: nav.tappable
+      hoverEnabled: true
+      cursorShape: nav.tappable ? Qt.PointingHandCursor : Qt.ArrowCursor
+      onClicked: nav.clicked()
     }
   }
 
@@ -112,186 +196,92 @@ Item {
     }
   }
 
-  component CategoryBlock: Column {
-    id: block
-    property string title: ""
-    property string category: ""
-    property var model: []
-    width: Math.floor((shop.width - shop.spacing * 2) / 3)
-    spacing: Style.space(8)
-
-    Text {
-      width: parent.width
-      text: block.title
-      textFormat: Text.PlainText
-      color: root.foreground
-      opacity: 0.55
-      font.family: root.fontFamily
-      font.pixelSize: Style.font.caption
-      font.bold: true
-      font.letterSpacing: 1.2
-      horizontalAlignment: Text.AlignHCenter
-    }
-
-    Repeater {
-      model: block.model
-      delegate: CosmeticCard {
-        required property var modelData
-        item: modelData
-        category: block.category
-        width: block.width
-      }
-    }
-  }
-
-  component CosmeticCard: Rectangle {
-    id: card
+  component FriendTile: Rectangle {
+    id: tile
     property var item: ({})
-    property string category: ""
 
-    readonly property int rev: store ? store.closetRev : 0
+    readonly property int rev: root.rev
     readonly property string itemId: item && item.id ? String(item.id) : ""
     readonly property string itemLabel: item && item.label ? String(item.label) : ""
-    readonly property int itemCost: item ? Math.max(0, Math.floor(Number(item.cost) || 0)) : 0
-    readonly property string previewName: {
-      var _ = card.rev
-      if (card.category === "skins")
-        return store ? store.characterGlyph : "unicorn"
-      if (card.item && card.item.phosphor)
-        return String(card.item.phosphor)
-      return ""
-    }
-    readonly property color previewTint: {
-      if (card.category === "skins" && card.item && card.item.accent)
-        return card.item.accent
-      return root.accent
-    }
-    readonly property color previewAura: {
-      if (card.category === "skins" && card.item && card.item.aura)
-        return card.item.aura
-      return root.aura
-    }
+    readonly property string itemEmoji: item && item.emoji ? String(item.emoji) : ""
+    readonly property int itemLevel: item ? Math.max(1, Math.floor(Number(item.level) || 1)) : 1
     readonly property bool unlocked: {
-      var _ = card.rev
-      return store ? store.isUnlocked(card.itemId) : false
+      var _ = tile.rev
+      return store ? store.isFriendUnlocked(tile.itemId) : false
     }
-    readonly property bool equipped: {
-      var _ = card.rev
-      return store ? store.isEquipped(card.category, card.itemId) : false
+    readonly property bool selected: {
+      var _ = tile.rev
+      return store && String(store.selectedFriend || "") === tile.itemId
     }
-    readonly property bool affordable: store ? store.stars >= card.itemCost : false
-    readonly property real progress: {
-      var _ = card.rev
-      var s = store ? store.stars : 0
-      return store ? store.affordProgress(card.item) : 0
-    }
-    readonly property bool hovered: cardMa.containsMouse
+    readonly property bool hovered: tile.unlocked && tileMa.containsMouse
 
-    height: Style.space(112)
+    implicitHeight: tileCol.implicitHeight + Style.space(16)
+    height: implicitHeight
     radius: Style.space(12)
     color: {
-      if (card.equipped)
+      if (tile.selected)
         return Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.26)
-      if (card.hovered)
+      if (tile.hovered)
         return Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.12)
       return Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.06)
     }
-    border.width: card.equipped ? 2 : 1
-    border.color: card.equipped
-      ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.65)
+    border.width: tile.selected ? 2 : 1
+    border.color: tile.selected
+      ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.75)
       : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.12)
-    opacity: (!card.unlocked && !card.affordable) ? 0.78 : 1
 
     Column {
-      anchors.fill: parent
-      anchors.margins: Style.space(8)
+      id: tileCol
+      anchors.centerIn: parent
+      width: parent.width - Style.space(8)
       spacing: Style.space(4)
 
-      Item {
+      Text {
         width: parent.width
-        height: Style.space(36)
-
-        Rectangle {
-          visible: card.category === "skins"
-          anchors.centerIn: parent
-          width: Style.space(34)
-          height: width
-          radius: width / 2
-          color: Qt.rgba(card.previewAura.r, card.previewAura.g, card.previewAura.b, 0.4)
-        }
-
-        PhosphorIcon {
-          visible: card.previewName.length > 0
-          anchors.centerIn: parent
-          width: Style.space(32)
-          height: width
-          name: card.previewName
-          color: card.previewTint
-        }
-
-        Text {
-          visible: card.previewName.length === 0
-          anchors.centerIn: parent
-          text: "·"
-          textFormat: Text.PlainText
-          color: root.dimForeground
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.body
-        }
+        text: tile.itemEmoji
+        textFormat: Text.PlainText
+        font.pixelSize: Style.font.body * 2
+        opacity: tile.unlocked ? 1 : 0.28
+        horizontalAlignment: Text.AlignHCenter
       }
 
       Text {
         width: parent.width
-        text: card.itemLabel
+        visible: tile.unlocked
+        height: visible ? implicitHeight : 0
+        text: tile.itemLabel
         textFormat: Text.PlainText
         color: root.foreground
         font.family: root.fontFamily
-        font.pixelSize: Style.font.bodySmall
-        font.bold: card.equipped
+        font.pixelSize: Style.font.caption
+        font.bold: tile.selected
         elide: Text.ElideRight
         horizontalAlignment: Text.AlignHCenter
       }
 
       Text {
         width: parent.width
-        text: {
-          if (card.equipped) return "wearing"
-          if (card.unlocked) return "tap to wear"
-          if (card.affordable) return "⭐ " + card.itemCost
-          return "keep practicing"
-        }
+        visible: !tile.unlocked
+        height: visible ? implicitHeight : 0
+        text: "Lv " + tile.itemLevel
         textFormat: Text.PlainText
-        color: card.equipped || card.affordable ? root.accent : root.dimForeground
+        color: root.dimForeground
         font.family: root.fontFamily
         font.pixelSize: Style.font.caption
         horizontalAlignment: Text.AlignHCenter
       }
-
-      Rectangle {
-        visible: !card.unlocked
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: parent.width
-        height: 4
-        radius: 2
-        color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.1)
-        Rectangle {
-          width: parent.width * Math.max(0, Math.min(1, card.progress))
-          height: parent.height
-          radius: 2
-          color: root.accent
-          opacity: 0.7
-        }
-      }
     }
 
     MouseArea {
-      id: cardMa
+      id: tileMa
       anchors.fill: parent
+      enabled: tile.unlocked
       hoverEnabled: true
-      cursorShape: Qt.PointingHandCursor
+      cursorShape: tile.unlocked ? Qt.PointingHandCursor : Qt.ArrowCursor
       onClicked: {
-        if (!store || !card.item) return
-        store.buyOrEquip(card.category, card.item)
+        if (!store || !tile.unlocked)
+          return
+        store.selectFriend(tile.itemId)
       }
     }
   }
