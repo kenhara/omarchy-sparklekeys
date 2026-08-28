@@ -1,9 +1,10 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import QtMultimedia
 
 // Sparklekeys state + economy + persistence.
-// Item-wrapped (family contract). No Process, no Python, no network.
+// Item-wrapped (family contract). No Python, no network.
 // Progress lives in ~/.local/share (earned stars — never a cache wipe).
 Item {
   id: store
@@ -16,7 +17,7 @@ Item {
   property string startMode: "letters"
   property int dailyGoal: 20
   property bool showStarsOnBar: true
-  property bool soundEnabled: false
+  property bool soundEnabled: true
   property bool panelOpen: false
 
   // Progress (persisted)
@@ -36,7 +37,12 @@ Item {
   property string equippedSkin: "pink"
   property string equippedEffect: "sparkles"
   property string equippedCompanion: "none"
-  property string equippedBanner: "classic"
+  property string equippedHat: "none"
+  property int closetRev: 0
+
+  // Bundled Kenney CC0 clips only — Qt.resolvedUrl stays inside the plugin.
+  readonly property url hitSoundUrl: Qt.resolvedUrl("sounds/hit.wav")
+  readonly property url sparkleSoundUrl: Qt.resolvedUrl("sounds/sparkle.wav")
 
   // Play state (not persisted, except via award/save)
   property string viewMode: "play"
@@ -81,7 +87,7 @@ Item {
 
   readonly property string characterGlyph: {
     var p = store.currentPack()
-    return (p && p.character) ? String(p.character) : "★"
+    return (p && p.character) ? String(p.character) : "unicorn"
   }
   readonly property string characterFallback: {
     var p = store.currentPack()
@@ -91,9 +97,13 @@ Item {
     var p = store.currentPack()
     return (p && p.displayName) ? String(p.displayName) : "Sparklekeys"
   }
-  readonly property string companionGlyph: {
+  readonly property string companionPhosphor: {
     var item = store.itemIn("companions", store.equippedCompanion)
-    return (item && item.glyph) ? String(item.glyph) : ""
+    return (item && item.phosphor) ? String(item.phosphor) : ""
+  }
+  readonly property string hatPhosphor: {
+    var item = store.itemIn("hats", store.equippedHat)
+    return (item && item.phosphor) ? String(item.phosphor) : ""
   }
   readonly property string skinAura: {
     var item = store.itemIn("skins", store.equippedSkin)
@@ -105,42 +115,37 @@ Item {
   }
   readonly property bool skinRainbow: store.equippedSkin === "rainbow"
   readonly property string effectStyle: {
+    if (store.equippedSkin === "rainbow")
+      return "rainbow"
     var item = store.itemIn("effects", store.equippedEffect)
     return (item && item.style) ? String(item.style) : "sparkles"
-  }
-  readonly property string bannerBackground: {
-    var item = store.itemIn("banners", store.equippedBanner)
-    return (item && item.background) ? String(item.background) : "#00000000"
-  }
-  readonly property string greetingStyle: {
-    var item = store.itemIn("banners", store.equippedBanner)
-    return (item && item.greetingStyle) ? String(item.greetingStyle) : "plain"
   }
   readonly property string displayTarget: {
     var ch = String(store.targetLetter || "a")
     return store.letterCase === "lower" ? ch.toLowerCase() : ch.toUpperCase()
   }
-  readonly property string barLabel: {
-    var g = store.characterGlyph
-    if (store.showStarsOnBar)
-      return g + " " + String(store.stars)
-    return g
-  }
   readonly property string greeting: {
     var name = String(store.childName || "").trim()
-    var style = store.greetingStyle
-    if (name.length) {
-      if (style === "sweet") return "Hi, " + name + "!"
-      if (style === "dreamy") return "Hi, " + name + "!"
-      if (style === "bold") return "Hey, " + name + "!"
+    if (name.length)
       return "Hi, " + name + "!"
-    }
     return "Hi!"
   }
+  readonly property int level: {
+    var n = 1 + Math.floor(Math.max(0, Number(store.totalEarned) || 0) / 15)
+    return Math.max(1, Math.min(20, n))
+  }
+  readonly property real levelProgress: {
+    if (store.level >= 20)
+      return 1
+    return (Math.max(0, Number(store.totalEarned) || 0) % 15) / 15
+  }
   readonly property var closetSkins: store.closetItems("skins")
-  readonly property var closetEffects: store.closetItems("effects")
+  readonly property var closetHats: store.closetItems("hats")
   readonly property var closetCompanions: store.closetItems("companions")
-  readonly property var closetBanners: store.closetItems("banners")
+
+  function bumpCloset() {
+    store.closetRev = store.closetRev + 1
+  }
 
   function normalizePack(id) {
     var s = String(id || "unicorn").trim().toLowerCase()
@@ -221,7 +226,7 @@ Item {
     if (category === "skins") return store.equippedSkin
     if (category === "effects") return store.equippedEffect
     if (category === "companions") return store.equippedCompanion
-    if (category === "banners") return store.equippedBanner
+    if (category === "hats") return store.equippedHat
     return ""
   }
 
@@ -235,8 +240,11 @@ Item {
     var eq = map[key] || packLib.defaultEquipped(key)
     store.equippedSkin = String((eq && eq.skin) || packLib.defaultEquipped(key).skin)
     store.equippedEffect = String((eq && eq.effect) || "sparkles")
+    if (store.equippedEffect === "rainbow")
+      store.equippedEffect = "sparkles"
     store.equippedCompanion = String((eq && eq.companion) || "none")
-    store.equippedBanner = String((eq && eq.banner) || "classic")
+    store.equippedHat = String((eq && eq.hat) || "none")
+    store.bumpCloset()
     if (store.startMode === "words")
       store.ensureWord()
   }
@@ -329,7 +337,9 @@ Item {
     store.lastAwardReason = reason || ""
     store.celebrating = true
     store.specialCelebrate = !!special
+    store.playHit(!!special)
     celebTimer.restart()
+    store.bumpCloset()
     store.scheduleSave()
   }
 
@@ -494,7 +504,7 @@ Item {
       "skin": store.equippedSkin,
       "effect": store.equippedEffect,
       "companion": store.equippedCompanion,
-      "banner": store.equippedBanner
+      "hat": store.equippedHat
     }
     store.equippedByPack = map
   }
@@ -506,9 +516,10 @@ Item {
     if (category === "skins") store.equippedSkin = sid
     else if (category === "effects") store.equippedEffect = sid
     else if (category === "companions") store.equippedCompanion = sid
-    else if (category === "banners") store.equippedBanner = sid
+    else if (category === "hats") store.equippedHat = sid
     else return
     store.persistEquipped()
+    store.bumpCloset()
     store.scheduleSave()
   }
 
@@ -544,8 +555,12 @@ Item {
       var id = ids[i]
       if (!unlocks[id] || !unlocks[id].length)
         unlocks[id] = packLib.defaultUnlocks(id)
-      if (!eqs[id])
-        eqs[id] = packLib.defaultEquipped(id)
+      var eq = eqs[id] || packLib.defaultEquipped(id)
+      if (!eq.hat)
+        eq.hat = "none"
+      if (eq.effect === "rainbow")
+        eq.effect = "sparkles"
+      eqs[id] = eq
     }
     store.unlockedByPack = unlocks
     store.equippedByPack = eqs
@@ -577,7 +592,7 @@ Item {
     store.seedMaps()
     store.persistEquipped()
     return {
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "activePack": store.effectivePack,
       "childName": store.childName,
       "stars": store.stars,
@@ -636,10 +651,18 @@ Item {
     }
   }
 
+  function ensureProgressDir() {
+    if (!store.progressDir || !store.progressDir.length)
+      return
+    mkdirProc.running = false
+    mkdirProc.running = true
+  }
+
   function flushSave() {
     saveDebounce.stop()
     if (!store.progressPath || !store.progressPath.length)
       return
+    store.ensureProgressDir()
     try {
       var body = JSON.stringify(store.toProgress(), null, 2) + "\n"
       progressFile.setText(body)
@@ -663,6 +686,7 @@ Item {
       wiggleTimer.stop()
       hintTimer.stop()
       celebTimer.stop()
+      store.hushSounds()
       huePause()
       store.flushSave()
     } else {
@@ -686,6 +710,14 @@ Item {
   }
 
   function huePause() {}
+
+  Component.onCompleted: store.ensureProgressDir()
+
+  Process {
+    id: mkdirProc
+    command: ["mkdir", "-p", "-m", "0700", store.progressDir]
+    running: false
+  }
 
   Timer {
     id: saveDebounce
@@ -716,6 +748,48 @@ Item {
       store.celebrating = false
       store.specialCelebrate = false
     }
+  }
+
+  function allowedSoundUrl(u) {
+    var s = String(u || "")
+    if (!s.length)
+      return false
+    return s === String(store.hitSoundUrl) || s === String(store.sparkleSoundUrl)
+  }
+
+  function playHit(special) {
+    if (!store.soundEnabled || !store.panelOpen)
+      return
+    if (soundCooldown.running)
+      return
+    soundCooldown.restart()
+    var fx = special ? sparkleFx : hitFx
+    if (!fx || !store.allowedSoundUrl(fx.source))
+      return
+    fx.play()
+  }
+
+  function hushSounds() {
+    hitFx.stop()
+    sparkleFx.stop()
+  }
+
+  SoundEffect {
+    id: hitFx
+    source: store.hitSoundUrl
+    volume: 0.5
+  }
+
+  SoundEffect {
+    id: sparkleFx
+    source: store.sparkleSoundUrl
+    volume: 0.5
+  }
+
+  Timer {
+    id: soundCooldown
+    interval: 90
+    repeat: false
   }
 
   FileView {

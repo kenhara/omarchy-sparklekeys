@@ -2,7 +2,7 @@
 
 GitHub: `https://github.com/kenhara/omarchy-sparklekeys`
 
-Letter Hunt typing tutor for Omarchy. Stars, Closet, pack-driven characters.
+Letter Hunt typing tutor for Omarchy. Stars, Closet dress-up you can see.
 Unicorn default; dragon stub. Local only — no network.
 
 ```sh

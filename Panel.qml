@@ -40,18 +40,6 @@ Panel {
       return liveStore.skinAura
     return Qt.rgba(1, 0.6, 0.84, 1)
   }
-  readonly property color bannerWash: {
-    if (!liveStore || !liveStore.bannerBackground)
-      return Qt.rgba(0, 0, 0, 0)
-    try {
-      var c = Qt.color(String(liveStore.bannerBackground))
-      if (!c || c.a <= 0.01)
-        return Qt.rgba(0, 0, 0, 0)
-      return Qt.rgba(c.r, c.g, c.b, 0.22)
-    } catch (e) {
-      return Qt.rgba(0, 0, 0, 0)
-    }
-  }
 
   function switchPanel(direction) {
     if (root.bar && typeof root.bar.switchPanelFrom === "function")
@@ -76,7 +64,7 @@ Panel {
     return liveStore.handleKey(event)
   }
 
-  readonly property int panelBaseHeight: Style.space(580)
+  readonly property int panelBaseHeight: Style.space(760)
 
   KeyboardPanel {
     id: panel
@@ -85,7 +73,7 @@ Panel {
     bar: root.bar
     open: root.opened
     focusTarget: keyCatcher
-    contentWidth: panel.fittedContentWidth(Style.space(400))
+    contentWidth: panel.fittedContentWidth(Style.space(560))
     contentHeight: panel.fittedContentHeight(root.panelBaseHeight)
     popoutSwitching: root.popoutSwitching
     popoutSwitchClosing: root.popoutSwitchClosing
@@ -101,12 +89,6 @@ Panel {
         root.handlePlayKeys(event)
       }
 
-      Rectangle {
-        anchors.fill: parent
-        color: root.bannerWash
-        visible: root.bannerWash.a > 0.01
-      }
-
       Item {
         id: body
         anchors.fill: parent
@@ -118,66 +100,89 @@ Panel {
           spacing: Style.space(12)
 
           Row {
+            id: headerRow
             width: parent.width
             spacing: Style.space(10)
 
-            CharacterView {
-              store: liveStore
-              opened: root.opened
-              foreground: root.contentForeground
-              fontFamily: root.contentFontFamily
-              glyphPx: Style.font.body * 2
-              implicitWidth: Style.space(56)
-              implicitHeight: Style.space(56)
-            }
-
-            Column {
-              width: parent.width - Style.space(160)
-              spacing: Style.space(4)
+            Row {
+              id: titleBit
+              spacing: Style.space(6)
               anchors.verticalCenter: parent.verticalCenter
 
+              PhosphorIcon {
+                anchors.verticalCenter: parent.verticalCenter
+                width: Style.font.body
+                height: width
+                name: "unicorn"
+                color: root.packAccent
+              }
+
               Text {
-                width: parent.width
-                text: liveStore ? liveStore.greeting : "Hi!"
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Sparklekeys"
                 textFormat: Text.PlainText
                 color: root.contentForeground
                 font.family: root.contentFontFamily
                 font.pixelSize: Style.font.body
                 font.bold: true
-                elide: Text.ElideRight
-
-                MouseArea {
-                  anchors.fill: parent
-                  hoverEnabled: true
-                  cursorShape: Qt.PointingHandCursor
-                  onClicked: if (liveStore) liveStore.beginNameEdit()
-                }
-              }
-
-              Text {
-                width: parent.width
-                text: liveStore ? (liveStore.packDisplayName + " · tap name") : ""
-                textFormat: Text.PlainText
-                color: root.contentForeground
-                opacity: 0.45
-                font.family: root.contentFontFamily
-                font.pixelSize: Style.font.caption
               }
             }
 
-            StarCounter {
+            Text {
+              id: jobLine
+              width: Math.max(
+                Style.space(64),
+                headerRow.width - titleBit.width - starsBit.width - headerRow.spacing * 2)
               anchors.verticalCenter: parent.verticalCenter
-              value: liveStore ? liveStore.stars : 0
-              lastAward: liveStore ? liveStore.lastAward : 0
-              celebrating: liveStore ? liveStore.celebrating : false
-              foreground: root.contentForeground
-              accent: root.packAccent
-              fontFamily: root.contentFontFamily
-              opened: root.opened
+              text: {
+                var hi = liveStore ? liveStore.greeting : "Hi!"
+                var pack = liveStore ? liveStore.packDisplayName : "Sparklekeys"
+                var lv = liveStore ? liveStore.level : 1
+                return hi + " · " + pack + " · Lv " + lv
+              }
+              textFormat: Text.PlainText
+              color: root.contentForeground
+              opacity: 0.62
+              font.family: root.contentFontFamily
+              font.pixelSize: Style.font.bodySmall
+              elide: Text.ElideRight
+            }
+
+            Column {
+              id: starsBit
+              anchors.verticalCenter: parent.verticalCenter
+              spacing: Style.space(2)
+
+              StarCounter {
+                value: liveStore ? liveStore.stars : 0
+                lastAward: liveStore ? liveStore.lastAward : 0
+                celebrating: liveStore ? liveStore.celebrating : false
+                foreground: root.contentForeground
+                accent: root.packAccent
+                fontFamily: root.contentFontFamily
+                opened: root.opened
+              }
+
+              Rectangle {
+                visible: liveStore && liveStore.level < 20
+                anchors.right: parent.right
+                width: Style.space(48)
+                height: 3
+                radius: 2
+                color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.1)
+                Rectangle {
+                  width: parent.width * Math.max(0, Math.min(1, liveStore ? liveStore.levelProgress : 0))
+                  height: parent.height
+                  radius: 2
+                  color: root.packAccent
+                  opacity: 0.8
+                }
+              }
             }
           }
 
           Row {
+            width: parent.width
             spacing: Style.space(8)
 
             TabPill {
@@ -190,17 +195,14 @@ Panel {
               selected: liveStore && liveStore.viewMode === "closet"
               onClicked: if (liveStore) liveStore.setViewMode("closet")
             }
-            TabPill {
-              label: liveStore && liveStore.startMode === "words" ? "Words" : "Letters"
-              selected: false
-              dim: true
+
+            ModeSwitch {
               visible: !liveStore || liveStore.viewMode === "play"
-              onClicked: {
-                if (!liveStore) return
-                var next = liveStore.startMode === "words" ? "letters" : "words"
-                root.persistSetting("startMode", next)
-              }
+              width: visible ? implicitWidth : 0
+              height: visible ? implicitHeight : 0
             }
+
+            SoundToggle {}
           }
 
           PlayView {
@@ -219,7 +221,7 @@ Panel {
           ClosetView {
             width: parent.width
             visible: liveStore && liveStore.viewMode === "closet"
-            height: visible ? Math.min(implicitHeight, Style.space(420)) : 0
+            height: visible ? Math.min(implicitHeight, Style.space(560)) : 0
             store: liveStore
             opened: root.opened
             foreground: root.contentForeground
@@ -227,6 +229,17 @@ Panel {
             accent: root.packAccent
             aura: root.packAura
             fontFamily: root.contentFontFamily
+          }
+
+          Text {
+            width: parent.width
+            text: "Unofficial · local only"
+            textFormat: Text.PlainText
+            wrapMode: Text.WordWrap
+            color: root.contentForeground
+            opacity: 0.22
+            font.family: root.contentFontFamily
+            font.pixelSize: Style.font.caption
           }
         }
 
@@ -247,7 +260,6 @@ Panel {
     id: pill
     property string label: ""
     property bool selected: false
-    property bool dim: false
     signal clicked()
 
     readonly property bool hovered: pillMa.containsMouse
@@ -268,7 +280,6 @@ Panel {
     border.color: pill.selected
       ? Qt.rgba(root.packAccent.r, root.packAccent.g, root.packAccent.b, 0.55)
       : Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.12)
-    opacity: pill.dim && !pill.hovered ? 0.85 : 1
 
     Text {
       id: pillText
@@ -286,6 +297,127 @@ Panel {
       hoverEnabled: true
       cursorShape: Qt.PointingHandCursor
       onClicked: pill.clicked()
+    }
+  }
+
+  component SoundToggle: Rectangle {
+    id: snd
+    readonly property bool on: liveStore && liveStore.soundEnabled
+    readonly property bool hovered: sndMa.containsMouse
+
+    implicitWidth: sndLabel.implicitWidth + Style.space(22)
+    implicitHeight: Style.space(30)
+    width: implicitWidth
+    height: implicitHeight
+    radius: Style.space(10)
+    color: {
+      if (snd.on)
+        return Qt.rgba(root.packAccent.r, root.packAccent.g, root.packAccent.b, 0.28)
+      if (snd.hovered)
+        return Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.12)
+      return "transparent"
+    }
+    border.width: 1
+    border.color: snd.on
+      ? Qt.rgba(root.packAccent.r, root.packAccent.g, root.packAccent.b, 0.55)
+      : Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.28)
+
+    Text {
+      id: sndLabel
+      anchors.centerIn: parent
+      text: "Sound"
+      textFormat: Text.PlainText
+      color: snd.on ? root.packAccent : root.contentForeground
+      font.family: root.contentFontFamily
+      font.pixelSize: Style.font.bodySmall
+      font.bold: snd.on
+    }
+    MouseArea {
+      id: sndMa
+      anchors.fill: parent
+      hoverEnabled: true
+      cursorShape: Qt.PointingHandCursor
+      onClicked: root.persistSetting("soundEnabled", !(liveStore && liveStore.soundEnabled))
+    }
+  }
+
+  component ModeSwitch: Item {
+    id: sw
+    readonly property bool words: liveStore && liveStore.startMode === "words"
+    readonly property bool hovered: lettersMa.containsMouse || wordsMa.containsMouse
+
+    implicitWidth: Style.space(168)
+    implicitHeight: Style.space(30)
+    width: implicitWidth
+    height: implicitHeight
+
+    Rectangle {
+      anchors.fill: parent
+      radius: height / 2
+      color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.06)
+      border.width: 1
+      border.color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.12)
+    }
+
+    Rectangle {
+      id: slider
+      width: parent.width / 2 - 2
+      height: parent.height - 4
+      y: 2
+      x: sw.words ? (parent.width / 2 + 1) : 2
+      radius: height / 2
+      color: Qt.rgba(root.packAccent.r, root.packAccent.g, root.packAccent.b, 0.28)
+      border.width: 1
+      border.color: Qt.rgba(root.packAccent.r, root.packAccent.g, root.packAccent.b, 0.55)
+      Behavior on x {
+        enabled: root.opened
+        NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+      }
+    }
+
+    Text {
+      width: parent.width / 2
+      height: parent.height
+      text: "Letters"
+      textFormat: Text.PlainText
+      color: !sw.words ? root.packAccent : root.contentForeground
+      font.family: root.contentFontFamily
+      font.pixelSize: Style.font.caption
+      font.bold: !sw.words
+      horizontalAlignment: Text.AlignHCenter
+      verticalAlignment: Text.AlignVCenter
+    }
+    Text {
+      x: parent.width / 2
+      width: parent.width / 2
+      height: parent.height
+      text: "Words"
+      textFormat: Text.PlainText
+      color: sw.words ? root.packAccent : root.contentForeground
+      font.family: root.contentFontFamily
+      font.pixelSize: Style.font.caption
+      font.bold: sw.words
+      horizontalAlignment: Text.AlignHCenter
+      verticalAlignment: Text.AlignVCenter
+    }
+
+    MouseArea {
+      id: lettersMa
+      x: 0
+      width: parent.width / 2
+      height: parent.height
+      hoverEnabled: true
+      cursorShape: Qt.PointingHandCursor
+      onClicked: root.persistSetting("startMode", "letters")
+    }
+    MouseArea {
+      id: wordsMa
+      x: parent.width / 2
+      width: parent.width / 2
+      height: parent.height
+      hoverEnabled: true
+      cursorShape: Qt.PointingHandCursor
+      onClicked: root.persistSetting("startMode", "words")
     }
   }
 }

@@ -73,9 +73,9 @@ BarWidget {
       if (root.settings && root.settings.soundEnabled !== undefined)
         return !!root.settings.soundEnabled
       if (typeof root.setting === "function")
-        return !!root.setting("soundEnabled", false)
+        return !!root.setting("soundEnabled", true)
     } catch (e) {}
-    return false
+    return true
   }
 
   implicitWidth: button.implicitWidth
@@ -185,14 +185,17 @@ BarWidget {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: sparkleStore.barLabel || "★"
+    // Em-space reserves the Phosphor character slot (Rocketlauncher pattern).
+    // WidgetButton is text-only — icon is a sibling overlay, not nested.
+    text: {
+      var label = sparkleStore.showStarsOnBar ? String(sparkleStore.stars) : ""
+      return label.length ? ("\u2003 " + label) : "\u2003"
+    }
     fontSize: Style.font.caption
     horizontalMargin: 8.5
     tooltipText: {
-      var tip = "Sparklekeys — Letter Hunt"
-      if (sparkleStore.packDisplayName && sparkleStore.packDisplayName.length)
-        tip += " · " + sparkleStore.packDisplayName
-      tip += " · ⭐ " + String(sparkleStore.stars)
+      var tip = "Sparklekeys · Lv " + String(sparkleStore.level)
+      tip += " · " + String(sparkleStore.stars)
       if (root.panelLoadError && root.panelLoadError.length) {
         var pe = root.panelLoadError
         if (pe.length > 120)
@@ -203,6 +206,35 @@ BarWidget {
     }
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.LeftButton) root.toggle()
+    }
+  }
+
+  Item {
+    z: 1
+    anchors.verticalCenter: button.verticalCenter
+    anchors.left: button.left
+    anchors.leftMargin: 8.5
+    width: Style.font.caption
+    height: Style.font.caption
+
+    PhosphorIcon {
+      anchors.fill: parent
+      name: sparkleStore.characterGlyph
+      color: sparkleStore.skinAccent && sparkleStore.skinAccent.length
+        ? sparkleStore.skinAccent
+        : (root.bar ? root.bar.foreground : "#f2f2f2")
+    }
+
+    PhosphorIcon {
+      visible: sparkleStore.hatPhosphor && sparkleStore.hatPhosphor.length
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.top: parent.top
+      width: Math.round(parent.width * 0.55)
+      height: width
+      name: sparkleStore.hatPhosphor
+      color: sparkleStore.skinAccent && sparkleStore.skinAccent.length
+        ? sparkleStore.skinAccent
+        : (root.bar ? root.bar.foreground : "#f2f2f2")
     }
   }
 }

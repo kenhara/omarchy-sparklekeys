@@ -1,0 +1,20 @@
+Sparklekeys bundled sounds
+==========================
+
+hit.wav      Kenney Interface Sounds 1.0 — Audio/confirmation_001.ogg
+sparkle.wav  Kenney Interface Sounds 1.0 — Audio/confirmation_002.ogg
+
+Source pack: https://kenney.nl/assets/interface-sounds
+Also published: https://opengameart.org/content/interface-sounds
+Downloaded: https://opengameart.org/sites/default/files/kenney_interfaceSounds.zip
+
+Created/distributed by Kenney (www.kenney.nl)
+License: Creative Commons Zero (CC0 1.0)
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Free for personal, educational, and commercial use.
+Credit Kenney / www.kenney.nl (not mandatory; we credit anyway).
+
+WAV copies are a local 16-bit/44.1 kHz mono transcode of those two official
+CC0 clips so QtMultimedia SoundEffect can play them from the plugin tree.
+No remote URLs. No freedesktop theme files.

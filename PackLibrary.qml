@@ -6,12 +6,12 @@ import QtQuick
 QtObject {
   id: library
 
-  // v1 ships unicorn (full) + dragon (stub) to prove pack-swap with zero logic branches.
+  // Unicorn (full) + dragon (stub). character is a PhosphorIcon name, not emoji.
   readonly property var packs: ({
     "unicorn": {
       "id": "unicorn",
       "displayName": "Unicorn",
-      "character": "🦄",
+      "character": "unicorn",
       "fallback": "U",
       "practiceWords": ["star", "horn", "magic", "pink", "wing", "pony", "glow"],
       "defaultSkin": "pink",
@@ -24,27 +24,28 @@ QtObject {
         ],
         "effects": [
           { "id": "sparkles", "label": "Sparkles", "cost": 0, "style": "sparkles" },
-          { "id": "rainbow", "label": "Rainbow Burst", "cost": 15, "style": "rainbow" },
+          { "id": "rainbow-burst", "label": "Rainbow Burst", "cost": 15, "style": "rainbow" },
           { "id": "stars", "label": "Star Shower", "cost": 20, "style": "stars" },
           { "id": "confetti", "label": "Confetti", "cost": 20, "style": "confetti" }
         ],
-        "companions": [
-          { "id": "none", "label": "None", "cost": 0, "glyph": "" },
-          { "id": "star", "label": "Star", "cost": 10, "glyph": "⭐" },
-          { "id": "butterfly", "label": "Butterfly", "cost": 15, "glyph": "🦋" },
-          { "id": "kitten", "label": "Kitten", "cost": 25, "glyph": "🐱" }
+        "hats": [
+          { "id": "none", "label": "None", "cost": 0, "phosphor": "" },
+          { "id": "crown", "label": "Crown", "cost": 10, "phosphor": "crown" },
+          { "id": "cap", "label": "Cap", "cost": 10, "phosphor": "baseball-cap" },
+          { "id": "flower", "label": "Lotus", "cost": 15, "phosphor": "flower-lotus" }
         ],
-        "banners": [
-          { "id": "classic", "label": "Classic", "cost": 0, "background": "#00000000", "greetingStyle": "plain" },
-          { "id": "candy", "label": "Candy", "cost": 20, "background": "#ffd6e8", "greetingStyle": "sweet" },
-          { "id": "night", "label": "Night Sky", "cost": 20, "background": "#1a1440", "greetingStyle": "dreamy" }
+        "companions": [
+          { "id": "none", "label": "None", "cost": 0, "phosphor": "" },
+          { "id": "star", "label": "Star", "cost": 10, "phosphor": "star" },
+          { "id": "butterfly", "label": "Butterfly", "cost": 15, "phosphor": "butterfly" },
+          { "id": "kitten", "label": "Kitten", "cost": 25, "phosphor": "cat" }
         ]
       }
     },
     "dragon": {
       "id": "dragon",
       "displayName": "Dragon",
-      "character": "🐉",
+      "character": "dragon",
       "fallback": "D",
       "practiceWords": ["fire", "wing", "gold", "roar", "cave"],
       "defaultSkin": "ember",
@@ -57,13 +58,16 @@ QtObject {
           { "id": "sparkles", "label": "Embers", "cost": 0, "style": "sparkles" },
           { "id": "stars", "label": "Star Fire", "cost": 20, "style": "stars" }
         ],
-        "companions": [
-          { "id": "none", "label": "None", "cost": 0, "glyph": "" },
-          { "id": "egg", "label": "Egg", "cost": 10, "glyph": "🥚" }
+        "hats": [
+          { "id": "none", "label": "None", "cost": 0, "phosphor": "" },
+          { "id": "crown", "label": "Crown", "cost": 10, "phosphor": "crown" },
+          { "id": "cap", "label": "Cap", "cost": 10, "phosphor": "baseball-cap" },
+          { "id": "flower", "label": "Lotus", "cost": 15, "phosphor": "flower-lotus" }
         ],
-        "banners": [
-          { "id": "classic", "label": "Classic", "cost": 0, "background": "#00000000", "greetingStyle": "plain" },
-          { "id": "cave", "label": "Cave", "cost": 20, "background": "#2a1810", "greetingStyle": "bold" }
+        "companions": [
+          { "id": "none", "label": "None", "cost": 0, "phosphor": "" },
+          { "id": "egg", "label": "Egg", "cost": 10, "phosphor": "egg" },
+          { "id": "star", "label": "Star", "cost": 15, "phosphor": "star" }
         ]
       }
     }
@@ -88,8 +92,8 @@ QtObject {
   function defaultUnlocks(id) {
     var p = library.get(id)
     var out = []
-    if (!p || !p.cosmetics) return ["none", "classic"]
-    var cats = ["skins", "effects", "companions", "banners"]
+    if (!p || !p.cosmetics) return ["none"]
+    var cats = ["skins", "effects", "hats", "companions"]
     for (var c = 0; c < cats.length; c++) {
       var list = p.cosmetics[cats[c]] || []
       for (var i = 0; i < list.length; i++) {
@@ -107,7 +111,7 @@ QtObject {
       "skin": skin,
       "effect": "sparkles",
       "companion": "none",
-      "banner": "classic"
+      "hat": "none"
     }
   }
 }

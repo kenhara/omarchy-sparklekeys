@@ -2,6 +2,7 @@ import QtQuick
 import qs.Commons
 
 // Simple on-screen QWERTY. Target key glows; wrong key brightens the glow.
+// Key size scales with panel width so the 10-key top row fills the play surface.
 Item {
   id: root
 
@@ -17,6 +18,19 @@ Item {
   readonly property var row1: ["a", "s", "d", "f", "g", "h", "j", "k", "l"]
   readonly property var row2: ["z", "x", "c", "v", "b", "n", "m"]
 
+  readonly property int topCount: 10
+  readonly property real keyGap: Style.space(5)
+  readonly property real keyW: {
+    var avail = Math.max(0, root.width)
+    var gaps = (topCount - 1) * keyGap
+    return Math.max(Style.space(22), Math.floor((avail - gaps) / topCount))
+  }
+  readonly property real keyH: Math.round(keyW * 1.08)
+  readonly property real keyRadius: Math.max(Style.space(6), Math.round(keyW * 0.2))
+  readonly property real row1Indent: Math.round(keyW * 0.36)
+  readonly property real row2Indent: Math.round(keyW * 0.78)
+  readonly property int keyFontPx: keyW >= Style.space(34) ? Style.font.bodySmall : Style.font.caption
+
   implicitHeight: col.implicitHeight
 
   function showKey(id) {
@@ -27,19 +41,19 @@ Item {
   Column {
     id: col
     width: root.width
-    spacing: Style.space(4)
+    spacing: root.keyGap
 
     KeyRow { keys: root.row0; indent: 0 }
-    KeyRow { keys: root.row1; indent: Style.space(10) }
-    KeyRow { keys: root.row2; indent: Style.space(22) }
+    KeyRow { keys: root.row1; indent: root.row1Indent }
+    KeyRow { keys: root.row2; indent: root.row2Indent }
   }
 
   component KeyRow: Row {
     id: kr
     property var keys: []
-    property int indent: 0
+    property real indent: 0
     anchors.horizontalCenter: parent.horizontalCenter
-    spacing: Style.space(4)
+    spacing: root.keyGap
     leftPadding: kr.indent
 
     Repeater {
@@ -50,9 +64,9 @@ Item {
         readonly property bool isTarget: keyId === String(root.targetLetter || "").toLowerCase()
         readonly property real glow: isTarget ? Math.max(1, root.glowBoost) : 1
 
-        width: Style.space(28)
-        height: Style.space(30)
-        radius: Style.space(6)
+        width: root.keyW
+        height: root.keyH
+        radius: root.keyRadius
         color: isTarget
           ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, Math.min(0.55, 0.22 * glow))
           : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.06)
@@ -68,7 +82,7 @@ Item {
           textFormat: Text.PlainText
           color: isTarget ? root.accent : root.foreground
           font.family: root.fontFamily
-          font.pixelSize: Style.font.caption
+          font.pixelSize: root.keyFontPx
           font.bold: isTarget
         }
 

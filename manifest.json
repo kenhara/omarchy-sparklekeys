@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "kenhara.sparklekeys",
   "name": "Sparklekeys",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "Harris Kenny",
   "license": "MIT",
-  "description": "Letter Hunt typing tutor for a first keyboard. Earn stars, dress a pack-driven character in the Closet. Unicorn default; dragon stub. Local only.",
+  "description": "Letter Hunt typing tutor for a first keyboard. Earn stars, buy looks and hats you can see on the character and the bar. Unicorn default; dragon stub. Local only.",
   "kinds": [
     "bar-widget"
   ],
@@ -31,7 +31,7 @@
   ],
   "barWidget": {
     "displayName": "Sparklekeys",
-    "description": "Letter Hunt for a first keyboard. Stars, Closet, pack-driven character. Local only.",
+    "description": "Letter Hunt for a first keyboard. Dress-up you can see on the character and the bar. Local only.",
     "category": "Widgets",
     "allowMultiple": false,
     "defaultSection": "right",
@@ -41,7 +41,7 @@
       "startMode": "letters",
       "dailyGoal": 20,
       "showStarsOnBar": true,
-      "soundEnabled": false
+      "soundEnabled": true
     },
     "schema": [
       {
@@ -97,9 +97,9 @@
       {
         "key": "soundEnabled",
         "type": "boolean",
-        "label": "Sound (reserved)",
-        "description": "Reserved for optional celebratory audio. Off in v1 — no bundled audio yet.",
-        "defaultValue": false
+        "label": "Sound",
+        "description": "Play a short cartoon blip on a correct letter (Kenney CC0, bundled). Off is silence. Misses stay quiet.",
+        "defaultValue": true
       }
     ],
     "aliases": [
