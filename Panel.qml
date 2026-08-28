@@ -72,7 +72,9 @@ Panel {
     open: root.opened
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(560))
-    contentHeight: panel.fittedContentHeight(column.implicitHeight + Style.space(16) * 2)
+    contentHeight: panel.fittedContentHeight(
+      headerRow.implicitHeight + greetLine.implicitHeight + innerCol.implicitHeight
+      + footerText.implicitHeight + Style.space(12) * 3 + Style.space(16) * 2)
     popoutSwitching: root.popoutSwitching
     popoutSwitchClosing: root.popoutSwitchClosing
 
@@ -97,22 +99,23 @@ Panel {
           width: body.width
           spacing: Style.space(12)
 
-          Row {
+          Item {
             id: headerRow
             width: parent.width
-            spacing: Style.space(10)
+            implicitHeight: Math.max(titleBit.implicitHeight, roomsSwitch.implicitHeight)
+            height: implicitHeight
 
             Row {
               id: titleBit
               spacing: Style.space(8)
+              anchors.left: parent.left
               anchors.verticalCenter: parent.verticalCenter
 
-              PhosphorIcon {
+              Text {
                 anchors.verticalCenter: parent.verticalCenter
-                width: Style.font.body
-                height: width
-                name: "unicorn"
-                color: root.packAccent
+                text: "🦄"
+                textFormat: Text.PlainText
+                font.pixelSize: Style.font.body
               }
 
               Text {
@@ -124,36 +127,51 @@ Panel {
                 font.pixelSize: Style.font.body
                 font.bold: true
               }
-
-              RoomSwitch {
-                anchors.verticalCenter: parent.verticalCenter
-              }
             }
 
-            Text {
-              id: jobLine
-              width: Math.max(
-                Style.space(64),
-                headerRow.width - titleBit.width - starsBit.width - headerRow.spacing * 2)
+            RoomSwitch {
+              id: roomsSwitch
+              anchors.right: parent.right
               anchors.verticalCenter: parent.verticalCenter
-              text: {
-                var hi = liveStore ? liveStore.greeting : "Hi!"
-                var pack = liveStore ? liveStore.packDisplayName : "Sparklekeys"
-                var lv = liveStore ? liveStore.level : 1
-                return hi + " · " + pack + " · Lv " + lv
-              }
+            }
+          }
+
+          Item {
+            id: greetLine
+            width: parent.width
+            implicitHeight: Math.max(greetText.implicitHeight, starsBit.implicitHeight)
+            height: implicitHeight
+
+            Text {
+              id: greetText
+              anchors.left: parent.left
+              anchors.verticalCenter: parent.verticalCenter
+              width: Math.max(
+                Style.space(80),
+                parent.width - starsBit.width - Style.space(10))
+              text: liveStore ? liveStore.greeting : "Hi!"
               textFormat: Text.PlainText
+              wrapMode: Text.Wrap
               color: root.contentForeground
-              opacity: 0.62
               font.family: root.contentFontFamily
-              font.pixelSize: Style.font.bodySmall
-              elide: Text.ElideRight
+              font.pixelSize: Style.font.body
             }
 
             Row {
               id: starsBit
-              spacing: Style.space(8)
+              anchors.right: parent.right
               anchors.verticalCenter: parent.verticalCenter
+              spacing: Style.space(8)
+
+              Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Lv " + (liveStore ? liveStore.level : 1)
+                textFormat: Text.PlainText
+                color: root.contentForeground
+                opacity: 0.7
+                font.family: root.contentFontFamily
+                font.pixelSize: Style.font.bodySmall
+              }
 
               Column {
                 anchors.verticalCenter: parent.verticalCenter
@@ -192,34 +210,56 @@ Panel {
             }
           }
 
-          PlayView {
+          Flickable {
+            id: flick
             width: parent.width
-            visible: !liveStore || liveStore.viewMode === "play"
-            height: visible ? implicitHeight : 0
-            store: liveStore
-            opened: root.opened && (!liveStore || liveStore.viewMode === "play")
-            foreground: root.contentForeground
-            dimForeground: root.dimForeground
-            accent: root.packAccent
-            aura: root.packAura
-            fontFamily: root.contentFontFamily
-            onPersistMode: function(mode) { root.persistSetting("startMode", mode) }
-          }
+            height: Math.min(
+              innerCol.implicitHeight,
+              Math.max(0, body.height - headerRow.height - greetLine.height
+                - footerText.height - column.spacing * 3))
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            flickableDirection: Flickable.VerticalFlick
+            interactive: contentHeight > height
+            contentWidth: width
+            contentHeight: innerCol.implicitHeight
 
-          ClosetView {
-            width: parent.width
-            visible: liveStore && liveStore.viewMode === "closet"
-            height: visible ? implicitHeight : 0
-            store: liveStore
-            opened: root.opened && liveStore && liveStore.viewMode === "closet"
-            foreground: root.contentForeground
-            dimForeground: root.dimForeground
-            accent: root.packAccent
-            aura: root.packAura
-            fontFamily: root.contentFontFamily
+            Column {
+              id: innerCol
+              width: flick.width
+              spacing: Style.space(12)
+
+              PlayView {
+                width: parent.width
+                visible: !liveStore || liveStore.viewMode === "play"
+                height: visible ? implicitHeight : 0
+                store: liveStore
+                opened: root.opened && (!liveStore || liveStore.viewMode === "play")
+                foreground: root.contentForeground
+                dimForeground: root.dimForeground
+                accent: root.packAccent
+                aura: root.packAura
+                fontFamily: root.contentFontFamily
+                onPersistMode: function(mode) { root.persistSetting("startMode", mode) }
+              }
+
+              ClosetView {
+                width: parent.width
+                visible: liveStore && liveStore.viewMode === "closet"
+                height: visible ? implicitHeight : 0
+                store: liveStore
+                opened: root.opened && liveStore && liveStore.viewMode === "closet"
+                foreground: root.contentForeground
+                dimForeground: root.dimForeground
+                accent: root.packAccent
+                aura: root.packAura
+                fontFamily: root.contentFontFamily
+              }
+            }
           }
 
           Text {
+            id: footerText
             width: parent.width
             text: "Unofficial · local only"
             textFormat: Text.PlainText
@@ -249,7 +289,7 @@ Panel {
     readonly property bool asking: liveStore && liveStore.askingName
     readonly property bool closet: liveStore && liveStore.viewMode === "closet"
     visible: liveStore && !rooms.asking
-    implicitWidth: visible ? Style.space(128) : 0
+    implicitWidth: visible ? Style.space(136) : 0
     implicitHeight: visible ? Style.space(24) : 0
     width: implicitWidth
     height: implicitHeight
@@ -293,7 +333,7 @@ Panel {
       x: parent.width / 2
       width: parent.width / 2
       height: parent.height
-      text: "Closet"
+      text: "Friends"
       textFormat: Text.PlainText
       color: rooms.closet ? root.packAccent : root.contentForeground
       font.family: root.contentFontFamily
