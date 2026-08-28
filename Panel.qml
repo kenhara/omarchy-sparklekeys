@@ -104,7 +104,7 @@ Panel {
 
             Row {
               id: titleBit
-              spacing: Style.space(6)
+              spacing: Style.space(8)
               anchors.verticalCenter: parent.verticalCenter
 
               PhosphorIcon {
@@ -123,6 +123,10 @@ Panel {
                 font.family: root.contentFontFamily
                 font.pixelSize: Style.font.body
                 font.bold: true
+              }
+
+              RoomSwitch {
+                anchors.verticalCenter: parent.verticalCenter
               }
             }
 
@@ -205,7 +209,7 @@ Panel {
           ClosetView {
             width: parent.width
             visible: liveStore && liveStore.viewMode === "closet"
-            height: visible ? Math.min(implicitHeight, Style.space(560)) : 0
+            height: visible ? implicitHeight : 0
             store: liveStore
             opened: root.opened && liveStore && liveStore.viewMode === "closet"
             foreground: root.contentForeground
@@ -237,6 +241,81 @@ Panel {
           active: root.opened
         }
       }
+    }
+  }
+
+  component RoomSwitch: Item {
+    id: rooms
+    readonly property bool asking: liveStore && liveStore.askingName
+    readonly property bool closet: liveStore && liveStore.viewMode === "closet"
+    visible: liveStore && !rooms.asking
+    implicitWidth: visible ? Style.space(128) : 0
+    implicitHeight: visible ? Style.space(24) : 0
+    width: implicitWidth
+    height: implicitHeight
+
+    Rectangle {
+      anchors.fill: parent
+      radius: height / 2
+      color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.08)
+      border.width: 1
+      border.color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.16)
+    }
+
+    Rectangle {
+      width: parent.width / 2 - 2
+      height: parent.height - 4
+      y: 2
+      x: rooms.closet ? (parent.width / 2 + 1) : 2
+      radius: height / 2
+      color: Qt.rgba(root.packAccent.r, root.packAccent.g, root.packAccent.b, 0.28)
+      border.width: 1
+      border.color: Qt.rgba(root.packAccent.r, root.packAccent.g, root.packAccent.b, 0.55)
+      Behavior on x {
+        enabled: root.opened
+        NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+      }
+    }
+
+    Text {
+      width: parent.width / 2
+      height: parent.height
+      text: "Play"
+      textFormat: Text.PlainText
+      color: !rooms.closet ? root.packAccent : root.contentForeground
+      font.family: root.contentFontFamily
+      font.pixelSize: Style.font.caption
+      font.bold: !rooms.closet
+      horizontalAlignment: Text.AlignHCenter
+      verticalAlignment: Text.AlignVCenter
+    }
+    Text {
+      x: parent.width / 2
+      width: parent.width / 2
+      height: parent.height
+      text: "Closet"
+      textFormat: Text.PlainText
+      color: rooms.closet ? root.packAccent : root.contentForeground
+      font.family: root.contentFontFamily
+      font.pixelSize: Style.font.caption
+      font.bold: rooms.closet
+      horizontalAlignment: Text.AlignHCenter
+      verticalAlignment: Text.AlignVCenter
+    }
+
+    MouseArea {
+      x: 0
+      width: parent.width / 2
+      height: parent.height
+      cursorShape: Qt.PointingHandCursor
+      onClicked: if (liveStore) liveStore.setViewMode("play")
+    }
+    MouseArea {
+      x: parent.width / 2
+      width: parent.width / 2
+      height: parent.height
+      cursorShape: Qt.PointingHandCursor
+      onClicked: if (liveStore) liveStore.setViewMode("closet")
     }
   }
 

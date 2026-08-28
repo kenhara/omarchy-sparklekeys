@@ -1,8 +1,8 @@
 import QtQuick
 import qs.Commons
 
-// One play room: companion stage + letter box, keyboard as the floor.
-// Name-entry uses the same stage. No hunt until That's me! / Skip.
+// Hunt room: target letter + on-screen keyboard. No character, no closet.
+// Name-entry is a centered field (no companion). Letters|Words lives under the letter.
 Item {
   id: root
 
@@ -16,7 +16,6 @@ Item {
 
   readonly property bool askingName: store ? store.askingName : false
   readonly property bool wordMode: store && store.startMode === "words" && !root.askingName
-  readonly property int companionSize: Style.space(152)
 
   signal persistMode(string mode)
 
@@ -37,264 +36,222 @@ Item {
     width: root.width
     spacing: Style.space(14)
 
-    Row {
-      id: stage
+    Item {
       width: parent.width
-      spacing: Style.space(16)
+      visible: root.askingName
+      height: visible ? nameCol.implicitHeight : 0
 
       Column {
-        id: companionCol
-        width: root.companionSize
-        spacing: Style.space(4)
-        anchors.verticalCenter: parent.verticalCenter
-
-        CharacterView {
-          store: root.store
-          opened: root.opened
-          foreground: root.foreground
-          fontFamily: root.fontFamily
-          glyphPx: Style.font.body * 4.2
-          implicitWidth: root.companionSize
-          implicitHeight: root.companionSize
-          width: implicitWidth
-          height: implicitHeight
-          onTapped: {
-            if (!store || store.askingName)
-              return
-            store.setViewMode("closet")
-          }
-        }
+        id: nameCol
+        width: Math.min(parent.width, Style.space(360))
+        anchors.horizontalCenter: parent.horizontalCenter
+        spacing: Style.space(8)
 
         Text {
           width: parent.width
-          visible: !root.askingName
-          text: "Closet"
+          text: "Type your name"
           textFormat: Text.PlainText
           color: root.foreground
-          opacity: 0.5
           font.family: root.fontFamily
-          font.pixelSize: Style.font.caption
+          font.pixelSize: Style.font.body
+          font.bold: true
           horizontalAlignment: Text.AlignHCenter
-          MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: if (store && !store.askingName) store.setViewMode("closet")
+        }
+
+        Rectangle {
+          width: parent.width
+          height: Style.space(64)
+          radius: Style.space(12)
+          color: Qt.rgba(root.aura.r, root.aura.g, root.aura.b, 0.16)
+          border.width: 1
+          border.color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.45)
+
+          Text {
+            anchors.centerIn: parent
+            text: {
+              var draft = store ? String(store.nameDraft || "") : ""
+              return draft.length ? draft : "…"
+            }
+            textFormat: Text.PlainText
+            color: root.foreground
+            opacity: store && store.nameDraft && store.nameDraft.length ? 1 : 0.4
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.body
+            font.bold: true
+          }
+        }
+
+        Row {
+          anchors.horizontalCenter: parent.horizontalCenter
+          spacing: Style.space(8)
+
+          RectButton {
+            label: "That's me!"
+            accented: true
+            onClicked: if (store) store.commitName()
+          }
+          RectButton {
+            label: "Skip"
+            onClicked: if (store) store.skipName()
+          }
+        }
+      }
+    }
+
+    Column {
+      id: huntCol
+      visible: !root.askingName
+      width: parent.width
+      height: visible ? implicitHeight : 0
+      spacing: Style.space(8)
+
+      Text {
+        width: parent.width
+        visible: root.wordMode
+        height: visible ? implicitHeight : 0
+        text: "Type the word"
+        textFormat: Text.PlainText
+        color: root.foreground
+        opacity: 0.5
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.caption
+        horizontalAlignment: Text.AlignHCenter
+      }
+
+      Row {
+        visible: root.wordMode
+        height: visible ? implicitHeight : 0
+        anchors.horizontalCenter: parent.horizontalCenter
+        spacing: Style.space(8)
+
+        Repeater {
+          model: store ? String(store.currentWord || "").length : 0
+          delegate: Rectangle {
+            required property int index
+            readonly property string ch: {
+              var w = store ? String(store.currentWord || "") : ""
+              var c = w.charAt(index)
+              return store && store.letterCase === "lower" ? c.toLowerCase() : c.toUpperCase()
+            }
+            readonly property bool done: store && index < store.wordCursor
+            readonly property bool current: store && index === store.wordCursor
+            width: Style.space(40)
+            height: Style.space(46)
+            radius: Style.space(8)
+            color: done
+              ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.28)
+              : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.06)
+            border.width: current ? 2 : 1
+            border.color: current
+              ? root.accent
+              : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.12)
+            Text {
+              anchors.centerIn: parent
+              text: ch
+              textFormat: Text.PlainText
+              color: done ? root.accent : root.foreground
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.body
+              font.bold: current || done
+            }
           }
         }
       }
 
       Item {
-        width: Math.max(0, parent.width - root.companionSize - stage.spacing)
-        height: Math.max(companionCol.implicitHeight, nameCol.implicitHeight, huntCol.implicitHeight)
+        width: parent.width
+        height: Math.round(letterBox.height * 1.12)
 
-        Column {
-          id: nameCol
-          visible: root.askingName
-          width: parent.width
-          anchors.verticalCenter: parent.verticalCenter
-          spacing: Style.space(8)
+        Rectangle {
+          id: letterBox
+          anchors.centerIn: parent
+          width: Style.space(216)
+          height: Style.space(216)
+          radius: Style.space(28)
+          color: Qt.rgba(0, 0, 0, 0.58)
+          border.width: 3
+          border.color: root.accent
+          rotation: 0
+          scale: 1
+          transformOrigin: Item.Center
 
           Text {
-            width: parent.width
-            text: "Type your name"
+            anchors.centerIn: parent
+            text: store ? store.displayTarget : "A"
             textFormat: Text.PlainText
             color: root.foreground
             font.family: root.fontFamily
-            font.pixelSize: Style.font.body
+            font.pixelSize: Style.font.body * 8
             font.bold: true
-          }
-
-          Rectangle {
-            width: parent.width
-            height: Style.space(64)
-            radius: Style.space(12)
-            color: Qt.rgba(root.aura.r, root.aura.g, root.aura.b, 0.16)
-            border.width: 1
-            border.color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.45)
-
-            Text {
-              anchors.centerIn: parent
-              text: {
-                var draft = store ? String(store.nameDraft || "") : ""
-                return draft.length ? draft : "…"
-              }
-              textFormat: Text.PlainText
-              color: root.foreground
-              opacity: store && store.nameDraft && store.nameDraft.length ? 1 : 0.4
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.body
-              font.bold: true
-            }
-          }
-
-          Row {
-            spacing: Style.space(8)
-
-            RectButton {
-              label: "That's me!"
-              accented: true
-              onClicked: if (store) store.commitName()
-            }
-            RectButton {
-              label: "Skip"
-              onClicked: if (store) store.skipName()
-            }
           }
         }
 
-        Column {
-          id: huntCol
-          visible: !root.askingName
-          width: parent.width
-          anchors.verticalCenter: parent.verticalCenter
-          spacing: Style.space(8)
+        SequentialAnimation {
+          id: wiggleAnim
+          running: store && store.wiggle && root.opened
+          loops: 1
+          NumberAnimation { target: letterBox; property: "rotation"; to: -9; duration: 45; easing.type: Easing.OutQuad }
+          NumberAnimation { target: letterBox; property: "rotation"; to: 9; duration: 70; easing.type: Easing.InOutQuad }
+          NumberAnimation { target: letterBox; property: "rotation"; to: -5; duration: 60 }
+          NumberAnimation { target: letterBox; property: "rotation"; to: 0; duration: 55; easing.type: Easing.OutQuad }
+        }
 
-          Text {
-            width: parent.width
-            visible: root.wordMode
-            text: "Type the word"
-            textFormat: Text.PlainText
-            color: root.foreground
-            opacity: 0.5
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.caption
-            horizontalAlignment: Text.AlignHCenter
+        SequentialAnimation {
+          id: popAnim
+          running: false
+          loops: 1
+          NumberAnimation { target: letterBox; property: "scale"; from: 1.0; to: 1.08; duration: 90; easing.type: Easing.OutQuad }
+          NumberAnimation { target: letterBox; property: "scale"; to: 1.0; duration: 140; easing.type: Easing.InOutQuad }
+        }
+
+        Connections {
+          target: store
+          function onWiggleChanged() {
+            if (!root.opened) {
+              letterBox.rotation = 0
+              return
+            }
+            if (store && store.wiggle)
+              wiggleAnim.restart()
+            else
+              letterBox.rotation = 0
           }
-
-          Row {
-            visible: root.wordMode
-            anchors.horizontalCenter: parent.horizontalCenter
-            spacing: Style.space(8)
-
-            Repeater {
-              model: store ? String(store.currentWord || "").length : 0
-              delegate: Rectangle {
-                required property int index
-                readonly property string ch: {
-                  var w = store ? String(store.currentWord || "") : ""
-                  var c = w.charAt(index)
-                  return store && store.letterCase === "lower" ? c.toLowerCase() : c.toUpperCase()
-                }
-                readonly property bool done: store && index < store.wordCursor
-                readonly property bool current: store && index === store.wordCursor
-                width: Style.space(40)
-                height: Style.space(46)
-                radius: Style.space(8)
-                color: done
-                  ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.28)
-                  : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.06)
-                border.width: current ? 2 : 1
-                border.color: current
-                  ? root.accent
-                  : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.12)
-                Text {
-                  anchors.centerIn: parent
-                  text: ch
-                  textFormat: Text.PlainText
-                  color: done ? root.accent : root.foreground
-                  font.family: root.fontFamily
-                  font.pixelSize: Style.font.body
-                  font.bold: current || done
-                }
-              }
+          function onCelebratingChanged() {
+            if (!root.opened) {
+              popAnim.stop()
+              letterBox.scale = 1
+              return
             }
-          }
-
-          Item {
-            width: parent.width
-            height: Math.round(letterBox.height * 1.12)
-
-            Rectangle {
-              id: letterBox
-              anchors.centerIn: parent
-              width: Style.space(200)
-              height: Style.space(200)
-              radius: Style.space(28)
-              color: Qt.rgba(0, 0, 0, 0.58)
-              border.width: 3
-              border.color: root.accent
-              rotation: 0
-              scale: 1
-              transformOrigin: Item.Center
-
-              Text {
-                anchors.centerIn: parent
-                text: store ? store.displayTarget : "A"
-                textFormat: Text.PlainText
-                color: root.foreground
-                font.family: root.fontFamily
-                font.pixelSize: Style.font.body * 8
-                font.bold: true
-              }
-            }
-
-            SequentialAnimation {
-              id: wiggleAnim
-              running: store && store.wiggle && root.opened
-              loops: 1
-              NumberAnimation { target: letterBox; property: "rotation"; to: -9; duration: 45; easing.type: Easing.OutQuad }
-              NumberAnimation { target: letterBox; property: "rotation"; to: 9; duration: 70; easing.type: Easing.InOutQuad }
-              NumberAnimation { target: letterBox; property: "rotation"; to: -5; duration: 60 }
-              NumberAnimation { target: letterBox; property: "rotation"; to: 0; duration: 55; easing.type: Easing.OutQuad }
-            }
-
-            SequentialAnimation {
-              id: popAnim
-              running: false
-              loops: 1
-              NumberAnimation { target: letterBox; property: "scale"; from: 1.0; to: 1.08; duration: 90; easing.type: Easing.OutQuad }
-              NumberAnimation { target: letterBox; property: "scale"; to: 1.0; duration: 140; easing.type: Easing.InOutQuad }
-            }
-
-            Connections {
-              target: store
-              function onWiggleChanged() {
-                if (!root.opened) {
-                  letterBox.rotation = 0
-                  return
-                }
-                if (store && store.wiggle)
-                  wiggleAnim.restart()
-                else
-                  letterBox.rotation = 0
-              }
-              function onCelebratingChanged() {
-                if (!root.opened) {
-                  popAnim.stop()
-                  letterBox.scale = 1
-                  return
-                }
-                if (store && store.celebrating)
-                  popAnim.restart()
-                else
-                  letterBox.scale = 1
-              }
-            }
-          }
-
-          ModeSwitch {
-            anchors.horizontalCenter: parent.horizontalCenter
-          }
-
-          Text {
-            width: parent.width
-            visible: store && store.lastAward > 0 && store.celebrating
-            text: {
-              var n = store ? store.lastAward : 0
-              var why = store ? String(store.lastAwardReason || "") : ""
-              if (why === "daily") return "+" + n + " ⭐  daily goal!"
-              if (why === "streak") return "+" + n + " ⭐  streak!"
-              if (why === "word") return "+" + n + " ⭐  word!"
-              return "+" + n + " ⭐"
-            }
-            textFormat: Text.PlainText
-            color: root.accent
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.bodySmall
-            font.bold: true
-            horizontalAlignment: Text.AlignHCenter
+            if (store && store.celebrating)
+              popAnim.restart()
+            else
+              letterBox.scale = 1
           }
         }
+      }
+
+      ModeSwitch {
+        anchors.horizontalCenter: parent.horizontalCenter
+      }
+
+      Text {
+        width: parent.width
+        visible: store && store.lastAward > 0 && store.celebrating
+        height: visible ? implicitHeight : 0
+        text: {
+          var n = store ? store.lastAward : 0
+          var why = store ? String(store.lastAwardReason || "") : ""
+          if (why === "daily") return "+" + n + " ⭐  daily goal!"
+          if (why === "streak") return "+" + n + " ⭐  streak!"
+          if (why === "word") return "+" + n + " ⭐  word!"
+          return "+" + n + " ⭐"
+        }
+        textFormat: Text.PlainText
+        color: root.accent
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.bodySmall
+        font.bold: true
+        horizontalAlignment: Text.AlignHCenter
       }
     }
 

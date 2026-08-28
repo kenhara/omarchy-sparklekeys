@@ -12,6 +12,7 @@ Item {
   property color foreground: "#f2f2f2"
   property string fontFamily: "monospace"
   property int glyphPx: Style.font.body * 2
+  property bool tappable: false
 
   readonly property bool isRainbow: store ? store.skinRainbow : false
   readonly property color auraColor: store && store.skinAura ? store.skinAura : "#ff9ad5"
@@ -162,7 +163,8 @@ Item {
   MouseArea {
     z: 8
     anchors.fill: parent
-    cursorShape: Qt.PointingHandCursor
-    onClicked: root.tapped()
+    enabled: root.tappable
+    cursorShape: root.tappable ? Qt.PointingHandCursor : Qt.ArrowCursor
+    onClicked: if (root.tappable) root.tapped()
   }
 }

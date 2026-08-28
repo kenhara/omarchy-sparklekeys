@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "kenhara.sparklekeys",
   "name": "Sparklekeys",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "author": "Harris Kenny",
   "license": "MIT",
-  "description": "Letter Hunt typing tutor for a first keyboard. Earn stars, buy looks and hats you can see on the character and the bar. Unicorn default; dragon stub. Local only.",
+  "description": "Letter Hunt typing tutor for a first keyboard. Play is the hunt; Closet is the dressing room; the bar chip is the character. Unicorn default; dragon stub. Local only.",
   "kinds": [
     "bar-widget"
   ],
@@ -31,7 +31,7 @@
   ],
   "barWidget": {
     "displayName": "Sparklekeys",
-    "description": "Letter Hunt for a first keyboard. Dress-up you can see on the character and the bar. Local only.",
+    "description": "Letter Hunt for a first keyboard. Play is hunt-only; Closet is the dressing room; the bar chip is the character. Local only.",
     "category": "Widgets",
     "allowMultiple": false,
     "defaultSection": "right",

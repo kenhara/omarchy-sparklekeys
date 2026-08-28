@@ -1,18 +1,22 @@
 # Sparklekeys — design notes
 
-**Status:** 0.2.1  
+**Status:** 0.3.0  
 **Id:** `kenhara.sparklekeys`  
 **Peers:** Scriptural, Rocketlauncher, Encyclopedic, Enricherino, Compliantish
 
 ## Why
 
-A six-year-old who loves unicorns *and* loves configuring things. The loop is
-tiny on purpose: type a letter → earn a star → buy a hat or look → **see it**
-on the character and the bar.
+A six-year-old cannot hold "type O" and "look at my crowned unicorn" at once.
+Synthesis-style: one problem owns the screen. Play is the hunt — the target
+letter and the keyboard, nothing else. Closet is a separate room: the reward,
+the dressing-up, the character as hero. The bar chip is the persistent tray of
+who she is, so the unicorn does not need to sit beside the letter during a
+lesson.
 
 0.1 persisted closet purchases she could not see (emoji face, faint halo,
-tiny friend, banner wash). 0.2 makes dress-up visible: Phosphor character,
-hat overlay, friend overlay, skin tint, bar chip icon.
+tiny friend, banner wash). 0.2 made dress-up visible: Phosphor character,
+hat overlay, friend overlay, skin tint, bar chip icon. 0.3 restages the
+rooms so hunt and closet never share a stage.
 
 ## The pack is the world
 
@@ -41,25 +45,27 @@ friend `none` share the free `none` unlock — both cost 0.
 viewBox 0 0 256 256, tint via `color`). No `Image.source`, no remote SVG,
 no webfont. Phosphor has no unicorn or dragon glyph — both alias to the
 official regular `horse` path. Hats and friends use crown, baseball-cap,
-flower-lotus, star, butterfly, cat, egg. 0.2.1 draws a Shape horn on the
-unicorn forehead (in front of a crown so it still peeks); idle sparkles
-orbit the halo while open. Panel height follows the column (no black void).
-Sound sits by the stars; Letters|Words by the hunt; tap the character for Closet.
+flower-lotus, star, butterfly, cat, egg. A Shape horn sits on the unicorn
+forehead (in front of a crown so it still peeks); idle sparkles orbit the
+halo while the Closet is open. Panel height follows the column (no black
+void). Sound sits by the stars; Letters|Words by the hunt.
+
+`CharacterView` is the Closet hero only — not a companion column on Play,
+not a second face in the header. The dressed character already lives on
+the **bar chip**. Buying a hat updates the Closet model in place. The
+character is not a tap target for room switching.
 
 Skins tint the halo **and** the Phosphor fill. Rainbow hue-shifts both
 while the panel is open (timer paused when `!opened`).
 
 Emoji `Text` is last-resort fallback if a path is missing.
 
-`CharacterView` is the companion on the Play stage (left) and the live
-Closet preview (left). The header is a slim product title — no second
-character. Buying a hat updates the Closet model in place.
-
 ## Bar chip
 
 WidgetButton is text-only. Match Rocketlauncher: em-space in `text` plus a
 sibling PhosphorIcon overlay tinted with `skinAccent`. Optional star count
 as the text after the em-space. Tooltip: `Sparklekeys · Lv N · stars`.
+This chip is the tray of who she is during a lesson.
 
 ## Closet
 
@@ -76,6 +82,10 @@ notifies.
 Hats persist as `hat` in `equippedByPack`. Old `banner` keys are ignored
 on hydrate. `schemaVersion` 2.
 
+The hunt is gone from this room. A **Back to hunt** pill under the hero
+is the kid-facing door back to Play. Header Play | Closet is quiet chrome
+for the same pair of rooms.
+
 ## Levels
 
 From `totalEarned` (never spendable `stars`, so buying does not de-level):
@@ -88,20 +98,23 @@ to the product title, with stars and a thin progress to the next level.
 ## Letters / Words
 
 A two-sided switch (Letters | Words) with a sliding selected pill. Only
-on Play. Not a third TabPill. `persistSetting('startMode', …)` the same
+on Play, under the letter. Not a third TabPill. `persistSetting('startMode', …)` the same
 way Panel already persists schema knobs.
 
 ## Name
 
-First-open `askingName` flow stays. Tapping the greeting does **not**
-edit the name (`beginNameEdit` remains unused). No `· tap name` subtitle.
+First-open `askingName` flow stays. Centered field, no companion on the
+left. Tapping the greeting does **not** edit the name (`beginNameEdit`
+remains unused). No `· tap name` subtitle. Room switch is hidden until
+That's me! / Skip.
 
 ## No-fail, shift-free, low text
 
 - Wrong key: target wiggles, hint key glows brighter. No red X, no timer, no
   score loss, no streak reset.
 - Match compares `event.text.toLowerCase()` — she never needs Shift.
-- Big letter + keyboard hint + Phosphor character carry the UI.
+- Big letter + keyboard hint carry Play. Phosphor character carries Closet
+  and the bar chip.
 
 ## Progress lives in share, not cache
 
@@ -131,13 +144,14 @@ Copy Scriptural / Rocketlauncher:
   accents overlay, they do not replace the palette
 - Pause celebration / wiggle / rainbow hue / idle sparkles when `!opened`
 - Store is `Item`-wrapped
-- Slim header: Phosphor unicorn + "Sparklekeys", then
-  `Hi, Name!` · pack · Lv N, then stars + Sound. Unofficial footer.
-  `contentHeight` follows `column.implicitHeight` (no padded 760 void).
-- Play is a two-column stage (companion | letter box) over a full-width
-  keyboard floor. Closet is preview | cards, not a card dump.
-- Tap the character for Closet / Play. Letters|Words sits under the letter.
-  Sound is a compact pill by the stars (filled when on, outline when off)
+- Slim header: Phosphor unicorn + "Sparklekeys", one quiet Play | Closet
+  pair, then `Hi, Name!` · pack · Lv N, then stars + Sound. Unofficial
+  footer. `contentHeight` follows `column.implicitHeight` (no padded 760
+  void).
+- Play is hunt-only (target + keyboard floor). Closet is a dressing room
+  (large CharacterView hero, Look / Hat / Friend under it). Do not tap the
+  unicorn to switch rooms. Do not put five controls in a row. Letters|Words
+  stays under the letter on Play. Sound stays by the stars.
 
 ## Economy
 
@@ -157,7 +171,8 @@ theme, no `pw-play`. `playHit(special)` from `awardStars` (which
 Cooldown 90 ms. Stop when `!panelOpen`. Default `soundEnabled` ON.
 In-panel Sound toggle via `persistSetting('soundEnabled', …)`.
 
-## Non-goals (0.2)
+## Non-goals (0.3)
 
 Network, multi-child profiles, marketplace submit, home-row curriculum,
-user-dropped packs, kid-facing Effects/Banners store.
+user-dropped packs, kid-facing Effects/Banners store, tap-name, tap-the-
+unicorn to switch rooms.

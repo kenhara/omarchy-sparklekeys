@@ -1,8 +1,8 @@
 # Sparklekeys
 
-Letter Hunt for a first keyboard. A six-year-old types a letter, earns a star,
-and spends stars in the Closet on a look, hat, and friend she can **see** on
-the character and the bar.
+Letter Hunt for a first keyboard. Play is hunt-only (the letter and the
+keyboard). Closet is the dressing room. The bar chip is the character — who
+she is during a lesson. Stars buy a look, hat, and friend she can **see**.
 
 The world is a **pack** — unicorn ships as the default; dragon is a stub so
 switching characters is data, not a rewrite. Local only. No network.
@@ -10,9 +10,18 @@ switching characters is data, not a rewrite. Local only. No network.
 **ID:** `kenhara.sparklekeys`  
 **Author:** Harris Kenny  
 **License:** MIT  
-**Version:** 0.2.1
+**Version:** 0.3.0
 
 **Repo:** https://github.com/kenhara/omarchy-sparklekeys
+
+### 0.3.0
+
+- Play is hunt-only: the target letter and the on-screen keyboard. Closet is
+  the dressing room. The bar chip is the character during a lesson.
+- One quiet Play | Closet pair in the header. Sound stays by the stars.
+  Letters|Words stays under the letter on Play. No tap-the-unicorn to switch.
+- Closet hero is a large CharacterView (top-center) with Look / Hat / Friend
+  under it and a Back to hunt pill. Name-entry is a centered field.
 
 ### 0.2.1
 
@@ -102,14 +111,18 @@ qmllint -I "$OMARCHY_PATH/shell" *.qml
 ## Play
 
 1. **Left-click** the bar character (optional star count) to open the panel.
-2. First open: type a name (letters only) and tap **That's me!** — or **Skip**.
-3. Hunt the big letter on the right of the stage. The dressed unicorn stays
-   on the left. The matching key glows on the hint keyboard.
+   That chip is who she is — the dressed unicorn lives there during a lesson.
+2. First open: type a name (letters only) in the centered field and tap
+   **That's me!** — or **Skip**.
+3. Hunt the big letter. The matching key glows on the hint keyboard. Play is
+   the hunt only — no companion, no Closet caption.
 4. Right key → stars + celebration + next letter. Wrong key → wiggle + brighter
    glow. No timers, no game over, no score loss.
-5. Tap the unicorn (**Closet**) to dress up. Tap an affordable locked look to buy; tap an unlocked look
-   to wear. Can't afford it yet? It says **keep practicing** with a progress bar.
-   A hat you buy stays on the unicorn (and the bar).
+5. Tap **Closet** in the header (or open it from Play | Closet) to enter the
+   dressing room. The large unicorn is the hero. Tap an affordable locked look
+   to buy; tap an unlocked look to wear. Can't afford it yet? It says
+   **keep practicing** with a progress bar. **Back to hunt** returns to Play.
+   A hat you buy stays on the unicorn in Closet and on the bar chip.
 6. Escape or click-away closes. Progress survives a shell restart.
 
 Letter order starts with the letters of the child's name (when set), then a
@@ -125,8 +138,9 @@ lower the level.
 | Left-click bar | Toggle panel |
 | Escape | Close panel |
 | Letter keys | Hunt / type (case-insensitive) |
-| Tap unicorn / Closet or Play caption | Switch Play ↔ Closet |
-| Letters / Words switch (under the letter) | Toggle start mode (mirrors `startMode`) |
+| Play / Closet (header) | Switch hunt ↔ dressing room |
+| Back to hunt (Closet) | Return to the hunt |
+| Letters / Words switch (under the letter, Play only) | Toggle start mode (mirrors `startMode`) |
 | Sound pill (by stars) | Toggle cartoon hit / sparkle |
 | Closet card | Buy if locked and affordable; else equip |
 | Name: Enter | Save name (first-open flow) |
@@ -198,10 +212,10 @@ No freedesktop theme chimes. Credit: [Kenney.nl](https://kenney.nl/assets/interf
 ## Layout
 
 ```
-manifest.json       # kenhara.sparklekeys @ 0.2.1
+manifest.json       # kenhara.sparklekeys @ 0.3.0
 qmldir
 BarWidget.qml       # bar chip + Loader → Panel; owns SparkleStore
-Panel.qml           # KeyboardPanel + slim header + Play / Closet + Sound
+Panel.qml           # KeyboardPanel + slim header (Play|Closet, Sound by stars)
 SparkleStore.qml    # state, economy, FileView progress, SoundEffect
 PackLibrary.qml     # unicorn + dragon stub (Phosphor names, hats)
 PhosphorIcon.qml    # local Phosphor regular paths (MIT)
