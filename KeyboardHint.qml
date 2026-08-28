@@ -19,17 +19,17 @@ Item {
   readonly property var row2: ["z", "x", "c", "v", "b", "n", "m"]
 
   readonly property int topCount: 10
-  readonly property real keyGap: Style.space(5)
+  readonly property real keyGap: Style.space(3)
   readonly property real keyW: {
     var avail = Math.max(0, root.width)
     var gaps = (topCount - 1) * keyGap
-    return Math.max(Style.space(22), Math.floor((avail - gaps) / topCount))
+    return Math.max(Style.space(24), Math.floor((avail - gaps) / topCount))
   }
-  readonly property real keyH: Math.round(keyW * 1.08)
+  readonly property real keyH: Math.round(keyW * 1.12)
   readonly property real keyRadius: Math.max(Style.space(6), Math.round(keyW * 0.2))
   readonly property real row1Indent: Math.round(keyW * 0.36)
   readonly property real row2Indent: Math.round(keyW * 0.78)
-  readonly property int keyFontPx: keyW >= Style.space(34) ? Style.font.bodySmall : Style.font.caption
+  readonly property int keyFontPx: Style.font.body
 
   implicitHeight: col.implicitHeight
 
@@ -68,12 +68,12 @@ Item {
         height: root.keyH
         radius: root.keyRadius
         color: isTarget
-          ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, Math.min(0.55, 0.22 * glow))
-          : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.06)
+          ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, Math.min(0.7, 0.38 * glow))
+          : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.12)
         border.width: isTarget ? 2 : 1
         border.color: isTarget
-          ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, Math.min(1, 0.45 * glow))
-          : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.12)
+          ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, Math.min(1, 0.85 * glow))
+          : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.22)
         scale: isTarget ? Math.min(1.12, 0.96 + 0.08 * glow) : 1
 
         Text {
@@ -81,9 +81,10 @@ Item {
           text: root.showKey(keyId)
           textFormat: Text.PlainText
           color: isTarget ? root.accent : root.foreground
+          opacity: isTarget ? 1 : 0.92
           font.family: root.fontFamily
           font.pixelSize: root.keyFontPx
-          font.bold: isTarget
+          font.bold: true
         }
 
         Behavior on scale {

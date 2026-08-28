@@ -18,21 +18,22 @@ Item {
 
   property var bits: []
 
+  readonly property int bitPx: root.special
+    ? Math.round(Style.font.body * 1.3)
+    : Style.font.body
+
   function glyphFor(style, i) {
-    if (style === "stars") {
-      var stars = ["⭐", "★", "✦"]
-      return stars[i % stars.length]
-    }
     if (style === "confetti") {
       var conf = ["●", "■", "▲", "◆"]
       return conf[i % conf.length]
     }
-    if (style === "rainbow") {
-      var rain = ["✦", "★", "●"]
-      return rain[i % rain.length]
-    }
-    var spark = ["✦", "⋆", "·", "✧"]
-    return spark[i % spark.length]
+    if (style === "stars")
+      return (i % 2 === 0) ? "star" : "sparkle"
+    return (i % 2 === 0) ? "sparkle" : "star"
+  }
+
+  function isIcon(g) {
+    return g === "sparkle" || g === "star"
   }
 
   function tintFor(style, i) {
@@ -52,11 +53,11 @@ Item {
       root.bits = []
       return
     }
-    var n = root.special ? 22 : 14
+    var n = root.special ? 36 : 20
     var arr = []
     for (var i = 0; i < n; i++) {
       var ang = ((360 / n) * i + ((i * 17) % 24)) * Math.PI / 180
-      var dist = 70 + ((i * 19) % 90)
+      var dist = 130 + ((i * 29) % 160)
       arr.push({
         "glyph": root.glyphFor(root.effectStyle, i),
         "dx": Math.cos(ang) * dist,
@@ -96,13 +97,24 @@ Item {
 
       readonly property real destX: root.width / 2 + (modelData && modelData.dx !== undefined ? modelData.dx : 0)
       readonly property real destY: root.height / 3 + (modelData && modelData.dy !== undefined ? modelData.dy : 0)
+      readonly property string g: modelData && modelData.glyph ? String(modelData.glyph) : "sparkle"
+
+      PhosphorIcon {
+        visible: root.isIcon(parent.g)
+        anchors.centerIn: parent
+        width: root.bitPx
+        height: width
+        name: parent.g
+        color: root.tintFor(root.effectStyle, modelData && modelData.tint !== undefined ? modelData.tint : index)
+      }
 
       Text {
+        visible: !root.isIcon(parent.g)
         anchors.centerIn: parent
-        text: modelData && modelData.glyph ? modelData.glyph : "✦"
+        text: parent.g
         textFormat: Text.PlainText
         color: root.tintFor(root.effectStyle, modelData && modelData.tint !== undefined ? modelData.tint : index)
-        font.pixelSize: root.special ? Style.font.body : Style.font.bodySmall
+        font.pixelSize: root.bitPx
       }
 
       SequentialAnimation {

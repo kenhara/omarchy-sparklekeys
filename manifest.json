@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "kenhara.sparklekeys",
   "name": "Sparklekeys",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": "Harris Kenny",
   "license": "MIT",
   "description": "Letter Hunt typing tutor for a first keyboard. Earn stars, buy looks and hats you can see on the character and the bar. Unicorn default; dragon stub. Local only.",

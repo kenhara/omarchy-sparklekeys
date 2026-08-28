@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Shapes
 import Quickshell
 import qs.Commons
 import qs.Ui
@@ -209,6 +210,10 @@ BarWidget {
     }
   }
 
+  readonly property color chipColor: sparkleStore.skinAccent && sparkleStore.skinAccent.length
+    ? sparkleStore.skinAccent
+    : (root.bar ? root.bar.foreground : "#f2f2f2")
+
   Item {
     z: 1
     anchors.verticalCenter: button.verticalCenter
@@ -220,21 +225,41 @@ BarWidget {
     PhosphorIcon {
       anchors.fill: parent
       name: sparkleStore.characterGlyph
-      color: sparkleStore.skinAccent && sparkleStore.skinAccent.length
-        ? sparkleStore.skinAccent
-        : (root.bar ? root.bar.foreground : "#f2f2f2")
+      color: root.chipColor
     }
 
     PhosphorIcon {
+      z: 1
       visible: sparkleStore.hatPhosphor && sparkleStore.hatPhosphor.length
       anchors.horizontalCenter: parent.horizontalCenter
       anchors.top: parent.top
       width: Math.round(parent.width * 0.55)
       height: width
       name: sparkleStore.hatPhosphor
-      color: sparkleStore.skinAccent && sparkleStore.skinAccent.length
-        ? sparkleStore.skinAccent
-        : (root.bar ? root.bar.foreground : "#f2f2f2")
+      color: root.chipColor
+    }
+
+    Shape {
+      id: chipHorn
+      visible: sparkleStore.characterGlyph === "unicorn"
+      z: 4
+      width: Math.round(parent.width * 0.42)
+      height: Math.round(parent.height * 0.62)
+      x: Math.round(parent.width * 0.14)
+      y: -Math.round(height * 0.08)
+      preferredRendererType: Shape.CurveRenderer
+
+      ShapePath {
+        fillColor: root.chipColor
+        fillRule: ShapePath.WindingFill
+        strokeWidth: 0
+        strokeColor: "transparent"
+        startX: chipHorn.width * 0.52
+        startY: chipHorn.height
+        PathLine { x: chipHorn.width * 0.06; y: 0 }
+        PathLine { x: chipHorn.width * 0.78; y: chipHorn.height * 0.82 }
+        PathLine { x: chipHorn.width * 0.52; y: chipHorn.height }
+      }
     }
   }
 }

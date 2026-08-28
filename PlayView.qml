@@ -18,8 +18,19 @@ Item {
   readonly property bool wordMode: store && store.startMode === "words" && !root.askingName
   readonly property int companionSize: Style.space(152)
 
+  signal persistMode(string mode)
+
   implicitHeight: col.implicitHeight
   clip: true
+
+  onOpenedChanged: {
+    if (root.opened)
+      return
+    popAnim.stop()
+    wiggleAnim.stop()
+    letterBox.scale = 1
+    letterBox.rotation = 0
+  }
 
   Column {
     id: col
@@ -31,22 +42,50 @@ Item {
       width: parent.width
       spacing: Style.space(16)
 
-      CharacterView {
-        store: root.store
-        opened: root.opened
-        foreground: root.foreground
-        fontFamily: root.fontFamily
-        glyphPx: Style.font.body * 4.2
-        implicitWidth: root.companionSize
-        implicitHeight: root.companionSize
-        width: implicitWidth
-        height: implicitHeight
+      Column {
+        id: companionCol
+        width: root.companionSize
+        spacing: Style.space(4)
         anchors.verticalCenter: parent.verticalCenter
+
+        CharacterView {
+          store: root.store
+          opened: root.opened
+          foreground: root.foreground
+          fontFamily: root.fontFamily
+          glyphPx: Style.font.body * 4.2
+          implicitWidth: root.companionSize
+          implicitHeight: root.companionSize
+          width: implicitWidth
+          height: implicitHeight
+          onTapped: {
+            if (!store || store.askingName)
+              return
+            store.setViewMode("closet")
+          }
+        }
+
+        Text {
+          width: parent.width
+          visible: !root.askingName
+          text: "Closet"
+          textFormat: Text.PlainText
+          color: root.foreground
+          opacity: 0.5
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+          horizontalAlignment: Text.AlignHCenter
+          MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: if (store && !store.askingName) store.setViewMode("closet")
+          }
+        }
       }
 
       Item {
         width: Math.max(0, parent.width - root.companionSize - stage.spacing)
-        height: Math.max(root.companionSize, nameCol.implicitHeight, huntCol.implicitHeight)
+        height: Math.max(companionCol.implicitHeight, nameCol.implicitHeight, huntCol.implicitHeight)
 
         Column {
           id: nameCol
@@ -163,18 +202,20 @@ Item {
 
           Item {
             width: parent.width
-            height: letterBox.height
+            height: Math.round(letterBox.height * 1.12)
 
             Rectangle {
               id: letterBox
-              anchors.horizontalCenter: parent.horizontalCenter
+              anchors.centerIn: parent
               width: Style.space(200)
               height: Style.space(200)
               radius: Style.space(28)
-              color: Qt.rgba(root.aura.r, root.aura.g, root.aura.b, 0.18)
-              border.width: 2
-              border.color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.55)
+              color: Qt.rgba(0, 0, 0, 0.58)
+              border.width: 3
+              border.color: root.accent
               rotation: 0
+              scale: 1
+              transformOrigin: Item.Center
 
               Text {
                 anchors.centerIn: parent
@@ -182,7 +223,7 @@ Item {
                 textFormat: Text.PlainText
                 color: root.foreground
                 font.family: root.fontFamily
-                font.pixelSize: Style.font.body * 7
+                font.pixelSize: Style.font.body * 8
                 font.bold: true
               }
             }
@@ -197,6 +238,14 @@ Item {
               NumberAnimation { target: letterBox; property: "rotation"; to: 0; duration: 55; easing.type: Easing.OutQuad }
             }
 
+            SequentialAnimation {
+              id: popAnim
+              running: false
+              loops: 1
+              NumberAnimation { target: letterBox; property: "scale"; from: 1.0; to: 1.08; duration: 90; easing.type: Easing.OutQuad }
+              NumberAnimation { target: letterBox; property: "scale"; to: 1.0; duration: 140; easing.type: Easing.InOutQuad }
+            }
+
             Connections {
               target: store
               function onWiggleChanged() {
@@ -209,7 +258,22 @@ Item {
                 else
                   letterBox.rotation = 0
               }
+              function onCelebratingChanged() {
+                if (!root.opened) {
+                  popAnim.stop()
+                  letterBox.scale = 1
+                  return
+                }
+                if (store && store.celebrating)
+                  popAnim.restart()
+                else
+                  letterBox.scale = 1
+              }
             }
+          }
+
+          ModeSwitch {
+            anchors.horizontalCenter: parent.horizontalCenter
           }
 
           Text {
@@ -245,6 +309,80 @@ Item {
       foreground: root.foreground
       fontFamily: root.fontFamily
       opened: root.opened
+    }
+  }
+
+  component ModeSwitch: Item {
+    id: sw
+    readonly property bool words: store && store.startMode === "words"
+    implicitWidth: Style.space(168)
+    implicitHeight: Style.space(28)
+    width: implicitWidth
+    height: implicitHeight
+
+    Rectangle {
+      anchors.fill: parent
+      radius: height / 2
+      color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.08)
+      border.width: 1
+      border.color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.16)
+    }
+
+    Rectangle {
+      id: slider
+      width: parent.width / 2 - 2
+      height: parent.height - 4
+      y: 2
+      x: sw.words ? (parent.width / 2 + 1) : 2
+      radius: height / 2
+      color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.32)
+      border.width: 1
+      border.color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.6)
+      Behavior on x {
+        enabled: root.opened
+        NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+      }
+    }
+
+    Text {
+      width: parent.width / 2
+      height: parent.height
+      text: "Letters"
+      textFormat: Text.PlainText
+      color: !sw.words ? root.accent : root.foreground
+      font.family: root.fontFamily
+      font.pixelSize: Style.font.bodySmall
+      font.bold: !sw.words
+      horizontalAlignment: Text.AlignHCenter
+      verticalAlignment: Text.AlignVCenter
+    }
+    Text {
+      x: parent.width / 2
+      width: parent.width / 2
+      height: parent.height
+      text: "Words"
+      textFormat: Text.PlainText
+      color: sw.words ? root.accent : root.foreground
+      font.family: root.fontFamily
+      font.pixelSize: Style.font.bodySmall
+      font.bold: sw.words
+      horizontalAlignment: Text.AlignHCenter
+      verticalAlignment: Text.AlignVCenter
+    }
+
+    MouseArea {
+      x: 0
+      width: parent.width / 2
+      height: parent.height
+      cursorShape: Qt.PointingHandCursor
+      onClicked: root.persistMode("letters")
+    }
+    MouseArea {
+      x: parent.width / 2
+      width: parent.width / 2
+      height: parent.height
+      cursorShape: Qt.PointingHandCursor
+      onClicked: root.persistMode("words")
     }
   }
 

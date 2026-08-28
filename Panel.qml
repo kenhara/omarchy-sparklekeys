@@ -64,8 +64,6 @@ Panel {
     return liveStore.handleKey(event)
   }
 
-  readonly property int panelBaseHeight: Style.space(760)
-
   KeyboardPanel {
     id: panel
     anchorItem: root.anchorItem
@@ -74,7 +72,7 @@ Panel {
     open: root.opened
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(560))
-    contentHeight: panel.fittedContentHeight(root.panelBaseHeight)
+    contentHeight: panel.fittedContentHeight(column.implicitHeight + Style.space(16) * 2)
     popoutSwitching: root.popoutSwitching
     popoutSwitchClosing: root.popoutSwitchClosing
 
@@ -148,61 +146,46 @@ Panel {
               elide: Text.ElideRight
             }
 
-            Column {
+            Row {
               id: starsBit
+              spacing: Style.space(8)
               anchors.verticalCenter: parent.verticalCenter
-              spacing: Style.space(2)
 
-              StarCounter {
-                value: liveStore ? liveStore.stars : 0
-                lastAward: liveStore ? liveStore.lastAward : 0
-                celebrating: liveStore ? liveStore.celebrating : false
-                foreground: root.contentForeground
-                accent: root.packAccent
-                fontFamily: root.contentFontFamily
-                opened: root.opened
-              }
+              Column {
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: Style.space(2)
 
-              Rectangle {
-                visible: liveStore && liveStore.level < 20
-                anchors.right: parent.right
-                width: Style.space(48)
-                height: 3
-                radius: 2
-                color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.1)
+                StarCounter {
+                  value: liveStore ? liveStore.stars : 0
+                  lastAward: liveStore ? liveStore.lastAward : 0
+                  celebrating: liveStore ? liveStore.celebrating : false
+                  foreground: root.contentForeground
+                  accent: root.packAccent
+                  fontFamily: root.contentFontFamily
+                  opened: root.opened
+                }
+
                 Rectangle {
-                  width: parent.width * Math.max(0, Math.min(1, liveStore ? liveStore.levelProgress : 0))
-                  height: parent.height
+                  visible: liveStore && liveStore.level < 20
+                  anchors.right: parent.right
+                  width: Style.space(48)
+                  height: 3
                   radius: 2
-                  color: root.packAccent
-                  opacity: 0.8
+                  color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.1)
+                  Rectangle {
+                    width: parent.width * Math.max(0, Math.min(1, liveStore ? liveStore.levelProgress : 0))
+                    height: parent.height
+                    radius: 2
+                    color: root.packAccent
+                    opacity: 0.8
+                  }
                 }
               }
-            }
-          }
 
-          Row {
-            width: parent.width
-            spacing: Style.space(8)
-
-            TabPill {
-              label: "Play"
-              selected: !liveStore || liveStore.viewMode === "play"
-              onClicked: if (liveStore) liveStore.setViewMode("play")
+              SoundToggle {
+                anchors.verticalCenter: parent.verticalCenter
+              }
             }
-            TabPill {
-              label: "Closet"
-              selected: liveStore && liveStore.viewMode === "closet"
-              onClicked: if (liveStore) liveStore.setViewMode("closet")
-            }
-
-            ModeSwitch {
-              visible: !liveStore || liveStore.viewMode === "play"
-              width: visible ? implicitWidth : 0
-              height: visible ? implicitHeight : 0
-            }
-
-            SoundToggle {}
           }
 
           PlayView {
@@ -210,12 +193,13 @@ Panel {
             visible: !liveStore || liveStore.viewMode === "play"
             height: visible ? implicitHeight : 0
             store: liveStore
-            opened: root.opened
+            opened: root.opened && (!liveStore || liveStore.viewMode === "play")
             foreground: root.contentForeground
             dimForeground: root.dimForeground
             accent: root.packAccent
             aura: root.packAura
             fontFamily: root.contentFontFamily
+            onPersistMode: function(mode) { root.persistSetting("startMode", mode) }
           }
 
           ClosetView {
@@ -223,7 +207,7 @@ Panel {
             visible: liveStore && liveStore.viewMode === "closet"
             height: visible ? Math.min(implicitHeight, Style.space(560)) : 0
             store: liveStore
-            opened: root.opened
+            opened: root.opened && liveStore && liveStore.viewMode === "closet"
             foreground: root.contentForeground
             dimForeground: root.dimForeground
             accent: root.packAccent
@@ -256,60 +240,16 @@ Panel {
     }
   }
 
-  component TabPill: Rectangle {
-    id: pill
-    property string label: ""
-    property bool selected: false
-    signal clicked()
-
-    readonly property bool hovered: pillMa.containsMouse
-
-    implicitWidth: pillText.implicitWidth + Style.space(22)
-    implicitHeight: Style.space(30)
-    width: implicitWidth
-    height: implicitHeight
-    radius: Style.space(10)
-    color: {
-      if (pill.selected)
-        return Qt.rgba(root.packAccent.r, root.packAccent.g, root.packAccent.b, 0.28)
-      if (pill.hovered)
-        return Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.12)
-      return Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.06)
-    }
-    border.width: 1
-    border.color: pill.selected
-      ? Qt.rgba(root.packAccent.r, root.packAccent.g, root.packAccent.b, 0.55)
-      : Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.12)
-
-    Text {
-      id: pillText
-      anchors.centerIn: parent
-      text: pill.label
-      textFormat: Text.PlainText
-      color: pill.selected ? root.packAccent : root.contentForeground
-      font.family: root.contentFontFamily
-      font.pixelSize: Style.font.bodySmall
-      font.bold: pill.selected
-    }
-    MouseArea {
-      id: pillMa
-      anchors.fill: parent
-      hoverEnabled: true
-      cursorShape: Qt.PointingHandCursor
-      onClicked: pill.clicked()
-    }
-  }
-
   component SoundToggle: Rectangle {
     id: snd
     readonly property bool on: liveStore && liveStore.soundEnabled
     readonly property bool hovered: sndMa.containsMouse
 
-    implicitWidth: sndLabel.implicitWidth + Style.space(22)
-    implicitHeight: Style.space(30)
+    implicitWidth: sndLabel.implicitWidth + Style.space(14)
+    implicitHeight: Style.space(24)
     width: implicitWidth
     height: implicitHeight
-    radius: Style.space(10)
+    radius: Style.space(8)
     color: {
       if (snd.on)
         return Qt.rgba(root.packAccent.r, root.packAccent.g, root.packAccent.b, 0.28)
@@ -338,86 +278,6 @@ Panel {
       hoverEnabled: true
       cursorShape: Qt.PointingHandCursor
       onClicked: root.persistSetting("soundEnabled", !(liveStore && liveStore.soundEnabled))
-    }
-  }
-
-  component ModeSwitch: Item {
-    id: sw
-    readonly property bool words: liveStore && liveStore.startMode === "words"
-    readonly property bool hovered: lettersMa.containsMouse || wordsMa.containsMouse
-
-    implicitWidth: Style.space(168)
-    implicitHeight: Style.space(30)
-    width: implicitWidth
-    height: implicitHeight
-
-    Rectangle {
-      anchors.fill: parent
-      radius: height / 2
-      color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.06)
-      border.width: 1
-      border.color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.12)
-    }
-
-    Rectangle {
-      id: slider
-      width: parent.width / 2 - 2
-      height: parent.height - 4
-      y: 2
-      x: sw.words ? (parent.width / 2 + 1) : 2
-      radius: height / 2
-      color: Qt.rgba(root.packAccent.r, root.packAccent.g, root.packAccent.b, 0.28)
-      border.width: 1
-      border.color: Qt.rgba(root.packAccent.r, root.packAccent.g, root.packAccent.b, 0.55)
-      Behavior on x {
-        enabled: root.opened
-        NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
-      }
-    }
-
-    Text {
-      width: parent.width / 2
-      height: parent.height
-      text: "Letters"
-      textFormat: Text.PlainText
-      color: !sw.words ? root.packAccent : root.contentForeground
-      font.family: root.contentFontFamily
-      font.pixelSize: Style.font.caption
-      font.bold: !sw.words
-      horizontalAlignment: Text.AlignHCenter
-      verticalAlignment: Text.AlignVCenter
-    }
-    Text {
-      x: parent.width / 2
-      width: parent.width / 2
-      height: parent.height
-      text: "Words"
-      textFormat: Text.PlainText
-      color: sw.words ? root.packAccent : root.contentForeground
-      font.family: root.contentFontFamily
-      font.pixelSize: Style.font.caption
-      font.bold: sw.words
-      horizontalAlignment: Text.AlignHCenter
-      verticalAlignment: Text.AlignVCenter
-    }
-
-    MouseArea {
-      id: lettersMa
-      x: 0
-      width: parent.width / 2
-      height: parent.height
-      hoverEnabled: true
-      cursorShape: Qt.PointingHandCursor
-      onClicked: root.persistSetting("startMode", "letters")
-    }
-    MouseArea {
-      id: wordsMa
-      x: parent.width / 2
-      width: parent.width / 2
-      height: parent.height
-      hoverEnabled: true
-      cursorShape: Qt.PointingHandCursor
-      onClicked: root.persistSetting("startMode", "words")
     }
   }
 }

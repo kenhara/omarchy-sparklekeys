@@ -10,9 +10,13 @@ switching characters is data, not a rewrite. Local only. No network.
 **ID:** `kenhara.sparklekeys`  
 **Author:** Harris Kenny  
 **License:** MIT  
-**Version:** 0.2.0
+**Version:** 0.2.1
 
 **Repo:** https://github.com/kenhara/omarchy-sparklekeys
+
+### 0.2.1
+
+- Unicorn horn (Shape on the Phosphor horse), idle sparkles, punchier correct-key burst. Panel hugs the keyboard. Sound sits by the stars; Letters|Words by the letter; tap the unicorn for the Closet.
 
 ### 0.2.0
 
@@ -103,7 +107,7 @@ qmllint -I "$OMARCHY_PATH/shell" *.qml
    on the left. The matching key glows on the hint keyboard.
 4. Right key → stars + celebration + next letter. Wrong key → wiggle + brighter
    glow. No timers, no game over, no score loss.
-5. Open **Closet**. Tap an affordable locked look to buy; tap an unlocked look
+5. Tap the unicorn (**Closet**) to dress up. Tap an affordable locked look to buy; tap an unlocked look
    to wear. Can't afford it yet? It says **keep practicing** with a progress bar.
    A hat you buy stays on the unicorn (and the bar).
 6. Escape or click-away closes. Progress survives a shell restart.
@@ -121,8 +125,9 @@ lower the level.
 | Left-click bar | Toggle panel |
 | Escape | Close panel |
 | Letter keys | Hunt / type (case-insensitive) |
-| Play / Closet | Switch views |
-| Letters / Words switch | Toggle start mode (mirrors `startMode`) |
+| Tap unicorn / Closet or Play caption | Switch Play ↔ Closet |
+| Letters / Words switch (under the letter) | Toggle start mode (mirrors `startMode`) |
+| Sound pill (by stars) | Toggle cartoon hit / sparkle |
 | Closet card | Buy if locked and affordable; else equip |
 | Name: Enter | Save name (first-open flow) |
 | Name: Backspace | Delete a letter |
@@ -193,7 +198,7 @@ No freedesktop theme chimes. Credit: [Kenney.nl](https://kenney.nl/assets/interf
 ## Layout
 
 ```
-manifest.json       # kenhara.sparklekeys @ 0.2.0
+manifest.json       # kenhara.sparklekeys @ 0.2.1
 qmldir
 BarWidget.qml       # bar chip + Loader → Panel; owns SparkleStore
 Panel.qml           # KeyboardPanel + slim header + Play / Closet + Sound

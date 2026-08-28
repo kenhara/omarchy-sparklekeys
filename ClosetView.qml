@@ -44,16 +44,39 @@ Item {
       height: Math.max(0, parent.height - lede.height - roomCol.spacing)
       spacing: Style.space(14)
 
-      CharacterView {
-        store: root.store
-        opened: root.opened
-        foreground: root.foreground
-        fontFamily: root.fontFamily
-        glyphPx: Style.font.body * 4.2
-        implicitWidth: root.companionSize
-        implicitHeight: root.companionSize
-        width: implicitWidth
-        height: implicitHeight
+      Column {
+        id: companionCol
+        width: root.companionSize
+        spacing: Style.space(4)
+
+        CharacterView {
+          store: root.store
+          opened: root.opened
+          foreground: root.foreground
+          fontFamily: root.fontFamily
+          glyphPx: Style.font.body * 4.2
+          implicitWidth: root.companionSize
+          implicitHeight: root.companionSize
+          width: implicitWidth
+          height: implicitHeight
+          onTapped: if (store) store.setViewMode("play")
+        }
+
+        Text {
+          width: parent.width
+          text: "Play"
+          textFormat: Text.PlainText
+          color: root.foreground
+          opacity: 0.5
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+          horizontalAlignment: Text.AlignHCenter
+          MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: if (store) store.setViewMode("play")
+          }
+        }
       }
 
       Flickable {

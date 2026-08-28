@@ -1,6 +1,6 @@
 # Sparklekeys — design notes
 
-**Status:** 0.2.0  
+**Status:** 0.2.1  
 **Id:** `kenhara.sparklekeys`  
 **Peers:** Scriptural, Rocketlauncher, Encyclopedic, Enricherino, Compliantish
 
@@ -41,7 +41,10 @@ friend `none` share the free `none` unlock — both cost 0.
 viewBox 0 0 256 256, tint via `color`). No `Image.source`, no remote SVG,
 no webfont. Phosphor has no unicorn or dragon glyph — both alias to the
 official regular `horse` path. Hats and friends use crown, baseball-cap,
-flower-lotus, star, butterfly, cat, egg.
+flower-lotus, star, butterfly, cat, egg. 0.2.1 draws a Shape horn on the
+unicorn forehead (in front of a crown so it still peeks); idle sparkles
+orbit the halo while open. Panel height follows the column (no black void).
+Sound sits by the stars; Letters|Words by the hunt; tap the character for Closet.
 
 Skins tint the halo **and** the Phosphor fill. Rainbow hue-shifts both
 while the panel is open (timer paused when `!opened`).
@@ -126,14 +129,15 @@ Copy Scriptural / Rocketlauncher:
 - `Style.font.body` / `bodySmall` / `caption` only
 - Theme tokens lead (`bar.foreground`, `Color.popups.background`); pack
   accents overlay, they do not replace the palette
-- Pause celebration / wiggle / rainbow hue when `!opened`
+- Pause celebration / wiggle / rainbow hue / idle sparkles when `!opened`
 - Store is `Item`-wrapped
 - Slim header: Phosphor unicorn + "Sparklekeys", then
-  `Hi, Name!` · pack · Lv N, then stars. Unofficial footer.
+  `Hi, Name!` · pack · Lv N, then stars + Sound. Unofficial footer.
+  `contentHeight` follows `column.implicitHeight` (no padded 760 void).
 - Play is a two-column stage (companion | letter box) over a full-width
   keyboard floor. Closet is preview | cards, not a card dump.
-- Distinct primary vs secondary: Play/Closet tabs; Letters/Words is a switch;
-  Sound is filled when on, outline when off
+- Tap the character for Closet / Play. Letters|Words sits under the letter.
+  Sound is a compact pill by the stars (filled when on, outline when off)
 
 ## Economy
 
