@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "kenhara.sparklekeys",
   "name": "Sparklekeys",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "author": "Harris Kenny",
   "license": "MIT",
-  "description": "Letter Hunt typing tutor for a first keyboard. Play is the hunt; Friends is themed unlock boards; the bar chip is the selected emoji. Unicorn default; dragon stub. Local only.",
+  "description": "Letter Hunt typing tutor for a first keyboard. Play is the hunt; Trophies is themed 4x5 unlock boards; the bar chip is the selected emoji. Unicorn default; dragon stub. Local only.",
   "kinds": [
     "bar-widget"
   ],
@@ -23,6 +23,7 @@
     "child",
     "unicorn",
     "friends",
+    "trophies",
     "emoji",
     "stars",
     "learn to type",
@@ -30,7 +31,7 @@
   ],
   "barWidget": {
     "displayName": "Sparklekeys",
-    "description": "Letter Hunt for a first keyboard. Play is hunt-only; Friends is themed unlock boards; the bar chip is the selected emoji. Local only.",
+    "description": "Letter Hunt for a first keyboard. Play is hunt-only; Trophies is themed 4x5 unlock boards; the bar chip is the selected emoji. Local only.",
     "category": "Widgets",
     "allowMultiple": false,
     "defaultSection": "right",
@@ -90,7 +91,7 @@
         "key": "showStarsOnBar",
         "type": "boolean",
         "label": "Show stars on bar",
-        "description": "Show the star balance next to the selected friend emoji on the bar chip.",
+        "description": "Show the star balance next to the selected trophy emoji on the bar chip.",
         "defaultValue": true
       },
       {
@@ -108,7 +109,8 @@
       "unicorn",
       "keyboard",
       "stars",
-      "friends"
+      "friends",
+      "trophies"
     ]
   }
 }

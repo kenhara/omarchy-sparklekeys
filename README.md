@@ -1,7 +1,7 @@
 # Sparklekeys
 
 Letter Hunt for a first keyboard. Play is hunt-only (the letter and the
-keyboard). Friends is themed unlock boards. The bar chip is the selected
+keyboard). Trophies is themed 4×5 unlock boards. The bar chip is the selected
 emoji — who she is during a lesson.
 
 The world is a **pack** — unicorn ships as the default; dragon is a stub so
@@ -11,9 +11,24 @@ network.
 **ID:** `kenhara.sparklekeys`  
 **Author:** Harris Kenny  
 **License:** MIT  
-**Version:** 0.4.0
+**Version:** 0.5.0
 
 **Repo:** https://github.com/kenhara/omarchy-sparklekeys
+
+### 0.5.0
+
+- Room is **Trophies** (header Play | Trophies). Play stays hunt-only.
+  Greeting stays on its own line. Flickable scroll stays.
+- Each board is a 4×5 grid (20 trophies). Four trophies unlock per level
+  (`level = 1 + floor(totalEarned / 15)`, cap 20). Opening Trophies (and
+  leveling up while that room is open) loads the board for her current
+  level. Prev/Next still browse unlocked boards; Next stays dim until the
+  next board unlocks.
+- Locked tiles: stone-gray background, emoji at low opacity, `Lv N`.
+  Unlocked: full color, accent-tinted tile; tap to wear on the bar chip.
+  Kid reads the picture (emoji-only; names dropped so 20 tiles fit).
+- Boards: Friends (Lv 1–5), Garden (6–10), Sky (11–15), Wild (16–20).
+  Default selected trophy is unicorn.
 
 ### 0.4.0
 
@@ -125,25 +140,25 @@ qmllint -I "$OMARCHY_PATH/shell" *.qml
 ## Play
 
 1. **Left-click** the bar emoji (optional star count) to open the panel.
-   That chip is who she is — the selected friend lives there during a lesson.
+   That chip is who she is — the selected trophy lives there during a lesson.
 2. First open: type a name (letters only) in the centered field and tap
    **That's me!** — or **Skip**.
 3. Hunt the big letter. The matching key glows on the hint keyboard. Play is
    the hunt only.
 4. Right key → stars + celebration + next letter. Wrong key → wiggle + brighter
    glow. No timers, no game over, no score loss.
-5. Tap **Friends** in the header to open the board. New friends show up as
-   you level up. Tap an unlocked friend to wear it on the bar chip. Locked
-   tiles show `Lv N`. **Next** pages to the next themed board once it is
-   unlocked; otherwise it stays dim (`keep practicing` / `Lv 6`). **Back to
-   hunt** returns to Play.
+5. Tap **Trophies** in the header to open the board for her current level.
+   Trophies light up as you level up. Tap an unlocked trophy to wear it on
+   the bar chip. Locked tiles are gray with `Lv N`. **Next** pages to the
+   next themed board once it is unlocked; otherwise it stays dim (`keep
+   practicing` / `Lv 6`). **Back to hunt** returns to Play.
 6. Escape or click-away closes. Progress survives a shell restart.
 
 Letter order starts with the letters of the child's name (when set), then a
 curated easy cycle.
 
-Level is `1 + floor(totalEarned / 15)`, capped at 20. One friend unlocks per
-level. Friends are not bought with stars.
+Level is `1 + floor(totalEarned / 15)`, capped at 20. Four trophies unlock
+per level. Trophies are not bought with stars.
 
 ### Controls
 
@@ -152,10 +167,10 @@ level. Friends are not bought with stars.
 | Left-click bar | Toggle panel |
 | Escape | Close panel |
 | Letter keys | Hunt / type (case-insensitive) |
-| Play / Friends (header) | Switch hunt ↔ friends boards |
-| Back to hunt (Friends) | Return to the hunt |
-| Prev / Next (Friends) | Page boards (Next only when unlocked) |
-| Friend tile | Wear if unlocked |
+| Play / Trophies (header) | Switch hunt ↔ trophy boards |
+| Back to hunt (Trophies) | Return to the hunt |
+| Prev / Next (Trophies) | Page boards (Next only when unlocked) |
+| Trophy tile | Wear if unlocked |
 | Letters / Words switch (under the letter, Play only) | Toggle start mode (mirrors `startMode`) |
 | Sound pill (by stars) | Toggle cartoon hit / sparkle |
 | Name: Enter | Save name (first-open flow) |
@@ -163,7 +178,7 @@ level. Friends are not bought with stars.
 
 ## Configure
 
-Parent-facing knobs. Child name, stars, selected friend, and stats live in
+Parent-facing knobs. Child name, stars, selected trophy, and stats live in
 `progress.json`, not `shell.json`.
 
 | Schema key | Type | Default | Purpose |
@@ -185,7 +200,7 @@ omarchy bar set kenhara.sparklekeys soundEnabled true
 ```
 
 Pack-swap proof: `characterPack dragon` switches practice words and accent
-colors with **zero logic changes**. Friends boards are shared, not per-pack.
+colors with **zero logic changes**. Trophies boards are shared, not per-pack.
 
 ## Remove
 
@@ -219,9 +234,10 @@ No freedesktop theme chimes. Credit: [Kenney.nl](https://kenney.nl/assets/interf
 - **Progress:** `${XDG_DATA_HOME:-$HOME/.local/share}/sparklekeys/progress.json`
   Written with Quickshell `FileView` (`atomicWrites`). The plugin `mkdir`s the
   data dir `0700` before the first save. Missing or corrupt file seeds a
-  working default game. `schemaVersion` 3 stores `selectedFriend` and last
-  viewed board. Old stars / name / stats still hydrate. Old closet unlock
-  keys are ignored for play but not wiped.
+  working default game. `schemaVersion` 3 stores `selectedFriend` (unknown
+  ids fall back to unicorn). Trophies snaps to the current-level board on
+  enter. Old stars / name / stats still hydrate. Old closet unlock keys are
+  ignored for play but not wiped.
 - **Why not `~/.cache`:** this is earned progress. A cache cleaner must not
   wipe her stars. Intentional divergence from sibling plugins.
 - **No network.** No Python. No clipboard or `xdg-open` helpers.
@@ -229,14 +245,14 @@ No freedesktop theme chimes. Credit: [Kenney.nl](https://kenney.nl/assets/interf
 ## Layout
 
 ```
-manifest.json       # kenhara.sparklekeys @ 0.4.0
+manifest.json       # kenhara.sparklekeys @ 0.5.0
 qmldir
 BarWidget.qml       # bar chip (selected emoji) + Loader → Panel; owns SparkleStore
-Panel.qml           # KeyboardPanel + two-line header (Play|Friends, greeting, Sound)
+Panel.qml           # KeyboardPanel + two-line header (Play|Trophies, greeting, Sound)
 SparkleStore.qml    # state, economy, FileView progress, SoundEffect
-PackLibrary.qml     # unicorn + dragon stub; Friends / Garden / Sky / Wild boards
+PackLibrary.qml     # unicorn + dragon stub; Friends / Garden / Sky / Wild 4×5 boards
 PlayView.qml
-ClosetView.qml      # Friends room (themed unlock boards)
+ClosetView.qml      # Trophies room (4×5 themed unlock boards)
 KeyboardHint.qml
 Celebration.qml
 StarCounter.qml
@@ -248,7 +264,7 @@ README.md
 ```
 
 `CharacterView.qml` and `PhosphorIcon.qml` may remain on disk unused by Panel /
-Bar / Friends. Celebration still uses PhosphorIcon for burst glyphs.
+Bar / Trophies. Celebration still uses PhosphorIcon for burst glyphs.
 
 ## Security baseline
 

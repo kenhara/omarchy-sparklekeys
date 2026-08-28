@@ -26,6 +26,8 @@ Item {
   property int totalEarned: 0
   property string selectedFriend: "unicorn"
   property string currentBoardId: "friends"
+  // currentBoardId is session-snapped on Trophies enter / level-up; still
+  // written in schema 3 so persist shape does not change.
   // Old closet keys round-trip so we do not wipe a 0.3 file. Unused for play.
   property var unlockedByPack: ({})
   property var equippedByPack: ({})
@@ -227,6 +229,28 @@ Item {
     return store.level >= lv
   }
 
+  function boardForLevel(level) {
+    var lv = Math.max(1, Math.min(20, Math.floor(Number(level) || 1)))
+    if (typeof packLib.boardForLevel === "function")
+      return packLib.boardForLevel(lv)
+    if (lv <= 5)
+      return packLib.board("friends")
+    if (lv <= 10)
+      return packLib.board("garden")
+    if (lv <= 15)
+      return packLib.board("sky")
+    return packLib.board("wild")
+  }
+
+  // Snap to the board for her current level. Room enter / level-up only —
+  // Prev/Next paging in the same visit must not call this.
+  function showBoardForLevel() {
+    var b = store.boardForLevel(store.level)
+    var sid = (b && b.id) ? String(b.id) : "friends"
+    store.currentBoardId = store.normalizeBoard(sid)
+    store.bumpBoard()
+  }
+
   function peekNextBoard() {
     var ids = packLib.boardIds()
     var idx = packLib.boardIndex(store.currentBoardId)
@@ -360,6 +384,7 @@ Item {
       store.lastAwardReason = reason || ""
       return
     }
+    var prevLevel = store.level
     store.stars += n
     store.totalEarned += n
     store.lastAward = n
@@ -368,7 +393,10 @@ Item {
     store.specialCelebrate = !!special
     store.playHit(!!special)
     celebTimer.restart()
-    store.bumpBoard()
+    if (store.viewMode === "closet" && store.level > prevLevel)
+      store.showBoardForLevel()
+    else
+      store.bumpBoard()
     store.scheduleSave()
   }
 
@@ -510,6 +538,8 @@ Item {
     store.viewMode = (mode === "closet") ? "closet" : "play"
     if (store.viewMode === "play")
       store.ensureTarget()
+    else
+      store.showBoardForLevel()
   }
 
   function seedDefaults() {
@@ -645,6 +675,8 @@ Item {
     } else {
       store.rollDay()
       store.ensureTarget()
+      if (store.viewMode === "closet")
+        store.showBoardForLevel()
     }
   }
 
