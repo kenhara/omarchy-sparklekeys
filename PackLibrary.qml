@@ -13,7 +13,7 @@ QtObject {
       "displayName": "Unicorn",
       "character": "unicorn",
       "fallback": "U",
-      "practiceWords": ["star", "horn", "magic", "pink", "wing", "pony", "glow"],
+      "practiceWords": ["star", "horn", "magic", "pink", "wing", "pony", "glow", "elf", "fairy", "knight", "wand", "moon", "spell", "wish", "pixie", "crown", "spark", "dust", "quest", "gem", "owl", "frog", "rose", "song"],
       "defaultSkin": "pink",
       "cosmetics": {
         "skins": [
@@ -47,7 +47,7 @@ QtObject {
       "displayName": "Dragon",
       "character": "dragon",
       "fallback": "D",
-      "practiceWords": ["fire", "wing", "gold", "roar", "cave"],
+      "practiceWords": ["fire", "wing", "gold", "roar", "cave", "knight", "flame", "claw", "egg", "scale"],
       "defaultSkin": "ember",
       "cosmetics": {
         "skins": [
