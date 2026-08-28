@@ -2,7 +2,7 @@
 
 GitHub: `https://github.com/kenhara/omarchy-sparklekeys`
 
-Letter Hunt typing tutor for Omarchy. Stars, Friends unlock boards, selected
+Letter Hunt typing tutor for Omarchy. Stars, Trophies unlock boards, selected
 emoji on the bar chip. Unicorn default; dragon stub. Local only — no network.
 
 ```sh

@@ -289,7 +289,7 @@ Panel {
     readonly property bool asking: liveStore && liveStore.askingName
     readonly property bool closet: liveStore && liveStore.viewMode === "closet"
     visible: liveStore && !rooms.asking
-    implicitWidth: visible ? Style.space(136) : 0
+    implicitWidth: visible ? Math.max(Style.space(168), (tropCap.implicitWidth + Style.space(16)) * 2) : 0
     implicitHeight: visible ? Style.space(24) : 0
     width: implicitWidth
     height: implicitHeight
@@ -318,6 +318,7 @@ Panel {
     }
 
     Text {
+      id: playCap
       width: parent.width / 2
       height: parent.height
       text: "Play"
@@ -330,10 +331,11 @@ Panel {
       verticalAlignment: Text.AlignVCenter
     }
     Text {
+      id: tropCap
       x: parent.width / 2
       width: parent.width / 2
       height: parent.height
-      text: "Friends"
+      text: "Trophies"
       textFormat: Text.PlainText
       color: rooms.closet ? root.packAccent : root.contentForeground
       font.family: root.contentFontFamily

@@ -1,8 +1,10 @@
 import QtQuick
 import qs.Commons
 
-// Friends room: themed emoji boards. Hunt is gone.
-// Unlocks are level-gated. Tap an unlocked friend to wear it on the bar chip.
+// Trophies room: themed 4×5 emoji boards. Hunt is gone.
+// Unlocks are level-gated (4 per level). Tap an unlocked trophy to wear it
+// on the bar chip. Color emoji cannot be tinted with Text.color — locked
+// tiles use a stone background + low emoji opacity (no QtQuick.Effects).
 Item {
   id: root
 
@@ -56,7 +58,7 @@ Item {
 
     Text {
       width: parent.width
-      text: "New friends show up as you level up."
+      text: "Trophies light up as you level up."
       textFormat: Text.PlainText
       color: root.foreground
       opacity: 0.5
@@ -101,19 +103,21 @@ Item {
       horizontalAlignment: Text.AlignHCenter
     }
 
-    Row {
-      id: tileRow
+    Grid {
+      id: tileGrid
       width: parent.width
-      spacing: Style.space(8)
+      columns: 5
+      columnSpacing: Style.space(6)
+      rowSpacing: Style.space(6)
 
       Repeater {
         model: root.friends
-        delegate: FriendTile {
+        delegate: TrophyTile {
           required property var modelData
           item: modelData
           width: Math.max(
-            Style.space(56),
-            Math.floor((tileRow.width - tileRow.spacing * 4) / 5))
+            Style.space(48),
+            Math.floor((tileGrid.width - tileGrid.columnSpacing * 4) / 5))
         }
       }
     }
@@ -196,13 +200,12 @@ Item {
     }
   }
 
-  component FriendTile: Rectangle {
+  component TrophyTile: Rectangle {
     id: tile
     property var item: ({})
 
     readonly property int rev: root.rev
     readonly property string itemId: item && item.id ? String(item.id) : ""
-    readonly property string itemLabel: item && item.label ? String(item.label) : ""
     readonly property string itemEmoji: item && item.emoji ? String(item.emoji) : ""
     readonly property int itemLevel: item ? Math.max(1, Math.floor(Number(item.level) || 1)) : 1
     readonly property bool unlocked: {
@@ -215,47 +218,41 @@ Item {
     }
     readonly property bool hovered: tile.unlocked && tileMa.containsMouse
 
-    implicitHeight: tileCol.implicitHeight + Style.space(16)
+    implicitHeight: Math.max(
+      width * 0.78,
+      tileCol.implicitHeight + Style.space(10))
     height: implicitHeight
-    radius: Style.space(12)
+    radius: Style.space(10)
     color: {
+      if (!tile.unlocked)
+        return Qt.rgba(0.50, 0.50, 0.52, 0.22)
       if (tile.selected)
-        return Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.26)
+        return Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.28)
       if (tile.hovered)
-        return Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.12)
-      return Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.06)
+        return Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.18)
+      return Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.10)
     }
     border.width: tile.selected ? 2 : 1
-    border.color: tile.selected
-      ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.75)
-      : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.12)
+    border.color: {
+      if (tile.selected)
+        return Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.8)
+      if (!tile.unlocked)
+        return Qt.rgba(0.55, 0.55, 0.58, 0.28)
+      return Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.28)
+    }
 
     Column {
       id: tileCol
       anchors.centerIn: parent
-      width: parent.width - Style.space(8)
-      spacing: Style.space(4)
+      width: parent.width - Style.space(6)
+      spacing: Style.space(2)
 
       Text {
         width: parent.width
         text: tile.itemEmoji
         textFormat: Text.PlainText
         font.pixelSize: Style.font.body * 2
-        opacity: tile.unlocked ? 1 : 0.28
-        horizontalAlignment: Text.AlignHCenter
-      }
-
-      Text {
-        width: parent.width
-        visible: tile.unlocked
-        height: visible ? implicitHeight : 0
-        text: tile.itemLabel
-        textFormat: Text.PlainText
-        color: root.foreground
-        font.family: root.fontFamily
-        font.pixelSize: Style.font.caption
-        font.bold: tile.selected
-        elide: Text.ElideRight
+        opacity: tile.unlocked ? 1 : 0.22
         horizontalAlignment: Text.AlignHCenter
       }
 
