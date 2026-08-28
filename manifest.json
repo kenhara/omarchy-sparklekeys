@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "kenhara.sparklekeys",
   "name": "Sparklekeys",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "author": "Harris Kenny",
   "license": "MIT",
-  "description": "Letter Hunt typing tutor for a first keyboard. Play is the hunt; Closet is the dressing room; the bar chip is the character. Unicorn default; dragon stub. Local only.",
+  "description": "Letter Hunt typing tutor for a first keyboard. Play is the hunt; Friends is themed unlock boards; the bar chip is the selected emoji. Unicorn default; dragon stub. Local only.",
   "kinds": [
     "bar-widget"
   ],
@@ -22,16 +22,15 @@
     "kids",
     "child",
     "unicorn",
-    "dragon",
+    "friends",
+    "emoji",
     "stars",
-    "closet",
-    "cosmetics",
     "learn to type",
     "alphabet"
   ],
   "barWidget": {
     "displayName": "Sparklekeys",
-    "description": "Letter Hunt for a first keyboard. Play is hunt-only; Closet is the dressing room; the bar chip is the character. Local only.",
+    "description": "Letter Hunt for a first keyboard. Play is hunt-only; Friends is themed unlock boards; the bar chip is the selected emoji. Local only.",
     "category": "Widgets",
     "allowMultiple": false,
     "defaultSection": "right",
@@ -48,7 +47,7 @@
         "key": "characterPack",
         "type": "enum",
         "label": "Character pack",
-        "description": "The character and theme world. Unicorn is the v1 default; dragon is a stub to prove pack-swap. Girl/boy variants are pack choices, not code branches.",
+        "description": "The practice-word and accent theme. Unicorn is the v1 default; dragon is a stub to prove pack-swap.",
         "options": [
           "unicorn",
           "dragon"
@@ -91,7 +90,7 @@
         "key": "showStarsOnBar",
         "type": "boolean",
         "label": "Show stars on bar",
-        "description": "Show the star balance next to the character on the bar chip.",
+        "description": "Show the star balance next to the selected friend emoji on the bar chip.",
         "defaultValue": true
       },
       {
@@ -109,7 +108,7 @@
       "unicorn",
       "keyboard",
       "stars",
-      "closet"
+      "friends"
     ]
   }
 }

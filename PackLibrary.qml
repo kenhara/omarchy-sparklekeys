@@ -1,77 +1,81 @@
 import QtQuick
 
-// Built-in packs as data. Adding a world = add one object here (+ schema enum).
-// Future: merge packs/*.json and ~/.config/sparklekeys/packs/*.json via FileView.
-// Access only through get() / ids() / exists() so that path stays one change.
+// Built-in packs (practice words + static accent/aura) and the Friends boards.
+// Access packs through get() / ids() / exists(); boards through board() / friend().
 QtObject {
   id: library
 
-  // Unicorn (full) + dragon (stub). character is a PhosphorIcon name, not emoji.
   readonly property var packs: ({
     "unicorn": {
       "id": "unicorn",
       "displayName": "Unicorn",
-      "character": "unicorn",
-      "fallback": "U",
       "practiceWords": ["star", "horn", "magic", "pink", "wing", "pony", "glow", "elf", "fairy", "knight", "wand", "moon", "spell", "wish", "pixie", "crown", "spark", "dust", "quest", "gem", "owl", "frog", "rose", "song"],
-      "defaultSkin": "pink",
-      "cosmetics": {
-        "skins": [
-          { "id": "pink", "label": "Pink Sparkle", "cost": 0, "aura": "#ff9ad5", "accent": "#ff6bb5" },
-          { "id": "sky", "label": "Sky Blue", "cost": 10, "aura": "#7ec8ff", "accent": "#3aa0ff" },
-          { "id": "golden", "label": "Golden", "cost": 25, "aura": "#ffd76a", "accent": "#f5b400" },
-          { "id": "rainbow", "label": "Rainbow", "cost": 30, "aura": "#ff9ad5", "accent": "#7c6bff" }
-        ],
-        "effects": [
-          { "id": "sparkles", "label": "Sparkles", "cost": 0, "style": "sparkles" },
-          { "id": "rainbow-burst", "label": "Rainbow Burst", "cost": 15, "style": "rainbow" },
-          { "id": "stars", "label": "Star Shower", "cost": 20, "style": "stars" },
-          { "id": "confetti", "label": "Confetti", "cost": 20, "style": "confetti" }
-        ],
-        "hats": [
-          { "id": "none", "label": "None", "cost": 0, "phosphor": "" },
-          { "id": "crown", "label": "Crown", "cost": 10, "phosphor": "crown" },
-          { "id": "cap", "label": "Cap", "cost": 10, "phosphor": "baseball-cap" },
-          { "id": "flower", "label": "Lotus", "cost": 15, "phosphor": "flower-lotus" }
-        ],
-        "companions": [
-          { "id": "none", "label": "None", "cost": 0, "phosphor": "" },
-          { "id": "star", "label": "Star", "cost": 10, "phosphor": "star" },
-          { "id": "butterfly", "label": "Butterfly", "cost": 15, "phosphor": "butterfly" },
-          { "id": "kitten", "label": "Kitten", "cost": 25, "phosphor": "cat" }
-        ]
-      }
+      "aura": "#ff9ad5",
+      "accent": "#ff6bb5"
     },
     "dragon": {
       "id": "dragon",
       "displayName": "Dragon",
-      "character": "dragon",
-      "fallback": "D",
       "practiceWords": ["fire", "wing", "gold", "roar", "cave", "knight", "flame", "claw", "egg", "scale"],
-      "defaultSkin": "ember",
-      "cosmetics": {
-        "skins": [
-          { "id": "ember", "label": "Ember", "cost": 0, "aura": "#ff7a3a", "accent": "#ff4d00" },
-          { "id": "jade", "label": "Jade", "cost": 10, "aura": "#3dff9a", "accent": "#00c46a" }
-        ],
-        "effects": [
-          { "id": "sparkles", "label": "Embers", "cost": 0, "style": "sparkles" },
-          { "id": "stars", "label": "Star Fire", "cost": 20, "style": "stars" }
-        ],
-        "hats": [
-          { "id": "none", "label": "None", "cost": 0, "phosphor": "" },
-          { "id": "crown", "label": "Crown", "cost": 10, "phosphor": "crown" },
-          { "id": "cap", "label": "Cap", "cost": 10, "phosphor": "baseball-cap" },
-          { "id": "flower", "label": "Lotus", "cost": 15, "phosphor": "flower-lotus" }
-        ],
-        "companions": [
-          { "id": "none", "label": "None", "cost": 0, "phosphor": "" },
-          { "id": "egg", "label": "Egg", "cost": 10, "phosphor": "egg" },
-          { "id": "star", "label": "Star", "cost": 15, "phosphor": "star" }
-        ]
-      }
+      "aura": "#ff7a3a",
+      "accent": "#ff4d00"
     }
   })
+
+  // Four themed boards of five. One friend unlocks per level (cap 20).
+  // Emoji are wide-adoption (Unicode 6.0; unicorn is 8.0). No new-era glyphs.
+  readonly property var boards: [
+    {
+      "id": "friends",
+      "title": "Friends",
+      "unlockLevel": 1,
+      "friends": [
+        { "id": "unicorn", "label": "Unicorn", "emoji": "🦄", "level": 1 },
+        { "id": "cat", "label": "Cat", "emoji": "🐱", "level": 2 },
+        { "id": "dog", "label": "Dog", "emoji": "🐶", "level": 3 },
+        { "id": "bunny", "label": "Bunny", "emoji": "🐰", "level": 4 },
+        { "id": "frog", "label": "Frog", "emoji": "🐸", "level": 5 }
+      ]
+    },
+    {
+      "id": "garden",
+      "title": "Garden",
+      "unlockLevel": 6,
+      "friends": [
+        { "id": "blossom", "label": "Blossom", "emoji": "🌸", "level": 6 },
+        { "id": "rose", "label": "Rose", "emoji": "🌹", "level": 7 },
+        { "id": "sunflower", "label": "Sunflower", "emoji": "🌻", "level": 8 },
+        { "id": "tulip", "label": "Tulip", "emoji": "🌷", "level": 9 },
+        { "id": "daisy", "label": "Daisy", "emoji": "🌼", "level": 10 }
+      ]
+    },
+    {
+      "id": "sky",
+      "title": "Sky",
+      "unlockLevel": 11,
+      "friends": [
+        { "id": "star", "label": "Star", "emoji": "⭐", "level": 11 },
+        { "id": "moon", "label": "Moon", "emoji": "🌙", "level": 12 },
+        { "id": "rainbow", "label": "Rainbow", "emoji": "🌈", "level": 13 },
+        { "id": "sparkles", "label": "Sparkles", "emoji": "✨", "level": 14 },
+        { "id": "sun", "label": "Sun", "emoji": "🌞", "level": 15 }
+      ]
+    },
+    {
+      "id": "wild",
+      "title": "Wild",
+      "unlockLevel": 16,
+      "friends": [
+        { "id": "bear", "label": "Bear", "emoji": "🐻", "level": 16 },
+        { "id": "panda", "label": "Panda", "emoji": "🐼", "level": 17 },
+        { "id": "tiger", "label": "Tiger", "emoji": "🐯", "level": 18 },
+        { "id": "elephant", "label": "Elephant", "emoji": "🐘", "level": 19 },
+        { "id": "dragon", "label": "Dragon", "emoji": "🐉", "level": 20 }
+      ]
+    }
+  ]
+
+  readonly property string defaultFriendId: "unicorn"
 
   function ids() {
     return ["unicorn", "dragon"]
@@ -89,29 +93,64 @@ QtObject {
     return library.packs.unicorn
   }
 
-  function defaultUnlocks(id) {
-    var p = library.get(id)
+  function boardIds() {
+    var list = library.boards || []
     var out = []
-    if (!p || !p.cosmetics) return ["none"]
-    var cats = ["skins", "effects", "hats", "companions"]
-    for (var c = 0; c < cats.length; c++) {
-      var list = p.cosmetics[cats[c]] || []
-      for (var i = 0; i < list.length; i++) {
-        if (list[i] && Number(list[i].cost) === 0 && list[i].id)
-          out.push(String(list[i].id))
-      }
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] && list[i].id)
+        out.push(String(list[i].id))
     }
     return out
   }
 
-  function defaultEquipped(id) {
-    var p = library.get(id)
-    var skin = (p && p.defaultSkin) ? String(p.defaultSkin) : "pink"
-    return {
-      "skin": skin,
-      "effect": "sparkles",
-      "companion": "none",
-      "hat": "none"
+  function boardIndex(id) {
+    var want = String(id || "")
+    var list = library.boards || []
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] && String(list[i].id) === want)
+        return i
     }
+    return -1
+  }
+
+  function boardAt(i) {
+    var list = library.boards || []
+    var n = Math.floor(Number(i) || 0)
+    if (n < 0 || n >= list.length)
+      return list.length ? list[0] : null
+    return list[n]
+  }
+
+  function board(id) {
+    var idx = library.boardIndex(id)
+    if (idx < 0)
+      return null
+    return library.boardAt(idx)
+  }
+
+  function friend(id) {
+    var want = String(id || "")
+    var list = library.boards || []
+    for (var b = 0; b < list.length; b++) {
+      var friends = (list[b] && list[b].friends) ? list[b].friends : []
+      for (var i = 0; i < friends.length; i++) {
+        if (friends[i] && String(friends[i].id) === want)
+          return friends[i]
+      }
+    }
+    return null
+  }
+
+  function boardForFriend(id) {
+    var want = String(id || "")
+    var list = library.boards || []
+    for (var b = 0; b < list.length; b++) {
+      var friends = (list[b] && list[b].friends) ? list[b].friends : []
+      for (var i = 0; i < friends.length; i++) {
+        if (friends[i] && String(friends[i].id) === want)
+          return list[b]
+      }
+    }
+    return null
   }
 }

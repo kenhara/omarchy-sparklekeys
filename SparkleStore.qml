@@ -24,6 +24,9 @@ Item {
   property string childName: ""
   property int stars: 0
   property int totalEarned: 0
+  property string selectedFriend: "unicorn"
+  property string currentBoardId: "friends"
+  // Old closet keys round-trip so we do not wipe a 0.3 file. Unused for play.
   property var unlockedByPack: ({})
   property var equippedByPack: ({})
   property int lettersTyped: 0
@@ -32,13 +35,7 @@ Item {
   property string lastDay: ""
   property int todayCount: 0
   property bool dailyGoalHit: false
-
-  // Equipped primitives for the active pack (bindable)
-  property string equippedSkin: "pink"
-  property string equippedEffect: "sparkles"
-  property string equippedCompanion: "none"
-  property string equippedHat: "none"
-  property int closetRev: 0
+  property int boardRev: 0
 
   // Bundled Kenney CC0 clips only — Qt.resolvedUrl stays inside the plugin.
   readonly property url hitSoundUrl: Qt.resolvedUrl("sounds/hit.wav")
@@ -85,40 +82,52 @@ Item {
 
   readonly property string effectivePack: store.normalizePack(store.characterPack)
 
-  readonly property string characterGlyph: {
-    var p = store.currentPack()
-    return (p && p.character) ? String(p.character) : "unicorn"
-  }
-  readonly property string characterFallback: {
-    var p = store.currentPack()
-    return (p && p.fallback) ? String(p.fallback) : "★"
-  }
   readonly property string packDisplayName: {
     var p = store.currentPack()
     return (p && p.displayName) ? String(p.displayName) : "Sparklekeys"
   }
-  readonly property string companionPhosphor: {
-    var item = store.itemIn("companions", store.equippedCompanion)
-    return (item && item.phosphor) ? String(item.phosphor) : ""
-  }
-  readonly property string hatPhosphor: {
-    var item = store.itemIn("hats", store.equippedHat)
-    return (item && item.phosphor) ? String(item.phosphor) : ""
-  }
   readonly property string skinAura: {
-    var item = store.itemIn("skins", store.equippedSkin)
-    return (item && item.aura) ? String(item.aura) : "#ff9ad5"
+    var p = store.currentPack()
+    return (p && p.aura) ? String(p.aura) : "#ff9ad5"
   }
   readonly property string skinAccent: {
-    var item = store.itemIn("skins", store.equippedSkin)
-    return (item && item.accent) ? String(item.accent) : "#ff6bb5"
+    var p = store.currentPack()
+    return (p && p.accent) ? String(p.accent) : "#ff6bb5"
   }
-  readonly property bool skinRainbow: store.equippedSkin === "rainbow"
-  readonly property string effectStyle: {
-    if (store.equippedSkin === "rainbow")
-      return "rainbow"
-    var item = store.itemIn("effects", store.equippedEffect)
-    return (item && item.style) ? String(item.style) : "sparkles"
+  readonly property string effectStyle: "sparkles"
+  readonly property string selectedEmoji: {
+    var f = packLib.friend(store.selectedFriend)
+    return (f && f.emoji) ? String(f.emoji) : "🦄"
+  }
+  readonly property string selectedFriendLabel: {
+    var f = packLib.friend(store.selectedFriend)
+    return (f && f.label) ? String(f.label) : "Unicorn"
+  }
+  readonly property var currentBoard: {
+    var _ = store.boardRev
+    var b = packLib.board(store.currentBoardId)
+    return b ? b : packLib.boardAt(0)
+  }
+  readonly property string currentBoardTitle: {
+    var b = store.currentBoard
+    return (b && b.title) ? String(b.title) : "Friends"
+  }
+  readonly property var currentBoardFriends: {
+    var b = store.currentBoard
+    return (b && b.friends) ? b.friends : []
+  }
+  readonly property bool canPrevBoard: {
+    var _ = store.boardRev
+    return packLib.boardIndex(store.currentBoardId) > 0
+  }
+  readonly property bool canNextBoard: {
+    var _ = store.boardRev
+    var n = store.peekNextBoard()
+    return !!(n && store.isBoardUnlocked(n.id))
+  }
+  readonly property int nextBoardLevel: {
+    var n = store.peekNextBoard()
+    return n ? Math.max(0, Math.floor(Number(n.unlockLevel) || 0)) : 0
   }
   readonly property string displayTarget: {
     var ch = String(store.targetLetter || "a")
@@ -139,12 +148,9 @@ Item {
       return 1
     return (Math.max(0, Number(store.totalEarned) || 0) % 15) / 15
   }
-  readonly property var closetSkins: store.closetItems("skins")
-  readonly property var closetHats: store.closetItems("hats")
-  readonly property var closetCompanions: store.closetItems("companions")
 
-  function bumpCloset() {
-    store.closetRev = store.closetRev + 1
+  function bumpBoard() {
+    store.boardRev = store.boardRev + 1
   }
 
   function normalizePack(id) {
@@ -162,6 +168,20 @@ Item {
   function normalizeMode(v) {
     var s = String(v || "letters").trim().toLowerCase()
     return s === "words" ? "words" : "letters"
+  }
+
+  function normalizeFriend(id) {
+    var s = String(id || packLib.defaultFriendId).trim().toLowerCase()
+    if (packLib.friend(s))
+      return s
+    return packLib.defaultFriendId
+  }
+
+  function normalizeBoard(id) {
+    var s = String(id || "friends").trim().toLowerCase()
+    if (packLib.board(s))
+      return s
+    return "friends"
   }
 
   function clampGoal(n) {
@@ -184,7 +204,6 @@ Item {
       store.showStarsOnBar = !!opts.showStarsOnBar
     if (opts.soundEnabled !== undefined)
       store.soundEnabled = !!opts.soundEnabled
-    store.syncPackWorld()
     store.ensureTarget()
   }
 
@@ -192,61 +211,71 @@ Item {
     return packLib.get(store.effectivePack)
   }
 
-  function closetItems(category) {
-    var p = store.currentPack()
-    if (!p || !p.cosmetics) return []
-    return p.cosmetics[category] || []
+  function isFriendUnlocked(id) {
+    var f = packLib.friend(id)
+    if (!f)
+      return false
+    var lv = Math.max(1, Math.floor(Number(f.level) || 1))
+    return store.level >= lv
   }
 
-  function itemIn(category, id) {
-    var list = store.closetItems(category)
-    var want = String(id || "")
-    for (var i = 0; i < list.length; i++) {
-      if (list[i] && String(list[i].id) === want)
-        return list[i]
-    }
-    return list.length ? list[0] : null
+  function isBoardUnlocked(id) {
+    var b = packLib.board(id)
+    if (!b)
+      return false
+    var lv = Math.max(1, Math.floor(Number(b.unlockLevel) || 1))
+    return store.level >= lv
   }
 
-  function unlockedList(packId) {
-    var key = store.normalizePack(packId || store.effectivePack)
-    var map = store.unlockedByPack || ({})
-    var list = map[key]
-    if (!list || !list.length)
-      return packLib.defaultUnlocks(key)
-    return list
+  function peekNextBoard() {
+    var ids = packLib.boardIds()
+    var idx = packLib.boardIndex(store.currentBoardId)
+    if (idx < 0 || idx >= ids.length - 1)
+      return null
+    return packLib.board(ids[idx + 1])
   }
 
-  function isUnlocked(id) {
-    var list = store.unlockedList(store.effectivePack)
-    return list.indexOf(String(id || "")) >= 0
+  function peekPrevBoard() {
+    var ids = packLib.boardIds()
+    var idx = packLib.boardIndex(store.currentBoardId)
+    if (idx <= 0)
+      return null
+    return packLib.board(ids[idx - 1])
   }
 
-  function equippedId(category) {
-    if (category === "skins") return store.equippedSkin
-    if (category === "effects") return store.equippedEffect
-    if (category === "companions") return store.equippedCompanion
-    if (category === "hats") return store.equippedHat
-    return ""
+  function showBoard(id) {
+    var sid = store.normalizeBoard(id)
+    if (!store.isBoardUnlocked(sid))
+      return
+    store.currentBoardId = sid
+    store.bumpBoard()
+    store.scheduleSave()
   }
 
-  function isEquipped(category, id) {
-    return store.equippedId(category) === String(id || "")
+  function nextBoard() {
+    var n = store.peekNextBoard()
+    if (!n || !store.isBoardUnlocked(n.id))
+      return
+    store.showBoard(n.id)
   }
 
-  function syncPackWorld() {
-    var key = store.effectivePack
-    var map = store.equippedByPack || ({})
-    var eq = map[key] || packLib.defaultEquipped(key)
-    store.equippedSkin = String((eq && eq.skin) || packLib.defaultEquipped(key).skin)
-    store.equippedEffect = String((eq && eq.effect) || "sparkles")
-    if (store.equippedEffect === "rainbow")
-      store.equippedEffect = "sparkles"
-    store.equippedCompanion = String((eq && eq.companion) || "none")
-    store.equippedHat = String((eq && eq.hat) || "none")
-    store.bumpCloset()
-    if (store.startMode === "words")
-      store.ensureWord()
+  function prevBoard() {
+    var n = store.peekPrevBoard()
+    if (!n)
+      return
+    store.showBoard(n.id)
+  }
+
+  function selectFriend(id) {
+    var sid = store.normalizeFriend(id)
+    if (!store.isFriendUnlocked(sid))
+      return
+    store.selectedFriend = sid
+    var b = packLib.boardForFriend(sid)
+    if (b && b.id)
+      store.currentBoardId = String(b.id)
+    store.bumpBoard()
+    store.scheduleSave()
   }
 
   function letterQueue() {
@@ -339,7 +368,7 @@ Item {
     store.specialCelebrate = !!special
     store.playHit(!!special)
     celebTimer.restart()
-    store.bumpCloset()
+    store.bumpBoard()
     store.scheduleSave()
   }
 
@@ -483,89 +512,6 @@ Item {
       store.ensureTarget()
   }
 
-  function addUnlock(id) {
-    var key = store.effectivePack
-    var map = store.unlockedByPack || ({})
-    var list = []
-    var cur = map[key] || packLib.defaultUnlocks(key)
-    for (var i = 0; i < cur.length; i++)
-      list.push(String(cur[i]))
-    var sid = String(id || "")
-    if (sid.length && list.indexOf(sid) < 0)
-      list.push(sid)
-    map[key] = list
-    store.unlockedByPack = map
-  }
-
-  function persistEquipped() {
-    var key = store.effectivePack
-    var map = store.equippedByPack || ({})
-    map[key] = {
-      "skin": store.equippedSkin,
-      "effect": store.equippedEffect,
-      "companion": store.equippedCompanion,
-      "hat": store.equippedHat
-    }
-    store.equippedByPack = map
-  }
-
-  function equip(category, id) {
-    var sid = String(id || "")
-    if (!sid.length || !store.isUnlocked(sid))
-      return
-    if (category === "skins") store.equippedSkin = sid
-    else if (category === "effects") store.equippedEffect = sid
-    else if (category === "companions") store.equippedCompanion = sid
-    else if (category === "hats") store.equippedHat = sid
-    else return
-    store.persistEquipped()
-    store.bumpCloset()
-    store.scheduleSave()
-  }
-
-  function buyOrEquip(category, item) {
-    if (!item || !item.id) return "none"
-    var sid = String(item.id)
-    if (store.isUnlocked(sid)) {
-      store.equip(category, sid)
-      return "equip"
-    }
-    var cost = Math.max(0, Math.floor(Number(item.cost) || 0))
-    if (store.stars >= cost) {
-      store.stars -= cost
-      store.addUnlock(sid)
-      store.equip(category, sid)
-      return "buy"
-    }
-    return "need"
-  }
-
-  function affordProgress(item) {
-    if (!item) return 0
-    if (store.isUnlocked(item.id)) return 1
-    var cost = Math.max(1, Math.floor(Number(item.cost) || 1))
-    return Math.max(0, Math.min(1, store.stars / cost))
-  }
-
-  function seedMaps() {
-    var ids = packLib.ids()
-    var unlocks = store.unlockedByPack || ({})
-    var eqs = store.equippedByPack || ({})
-    for (var i = 0; i < ids.length; i++) {
-      var id = ids[i]
-      if (!unlocks[id] || !unlocks[id].length)
-        unlocks[id] = packLib.defaultUnlocks(id)
-      var eq = eqs[id] || packLib.defaultEquipped(id)
-      if (!eq.hat)
-        eq.hat = "none"
-      if (eq.effect === "rainbow")
-        eq.effect = "sparkles"
-      eqs[id] = eq
-    }
-    store.unlockedByPack = unlocks
-    store.equippedByPack = eqs
-  }
-
   function seedDefaults() {
     store.childName = ""
     store.stars = 0
@@ -576,27 +522,28 @@ Item {
     store.lastDay = store.todayLocal()
     store.todayCount = 0
     store.dailyGoalHit = false
+    store.selectedFriend = packLib.defaultFriendId
+    store.currentBoardId = "friends"
     store.unlockedByPack = ({})
     store.equippedByPack = ({})
-    store.seedMaps()
-    store.syncPackWorld()
     store.letterCursor = 0
     store.wordPick = 0
     store.wordCursor = 0
     store.ensureTarget()
+    store.bumpBoard()
     store.hydrated = true
     store.askingName = true
   }
 
   function toProgress() {
-    store.seedMaps()
-    store.persistEquipped()
     return {
-      "schemaVersion": 2,
+      "schemaVersion": 3,
       "activePack": store.effectivePack,
       "childName": store.childName,
       "stars": store.stars,
       "totalEarned": store.totalEarned,
+      "selectedFriend": store.selectedFriend,
+      "currentBoardId": store.currentBoardId,
       "unlocked": store.unlockedByPack,
       "equipped": store.equippedByPack,
       "stats": {
@@ -636,13 +583,20 @@ Item {
       store.lastDay = String(stats.lastDay || "")
       store.todayCount = Math.max(0, Math.floor(Number(stats.todayCount) || 0))
       store.dailyGoalHit = !!stats.dailyGoalHit
-      store.seedMaps()
+      var friendId = store.normalizeFriend(obj.selectedFriend || packLib.defaultFriendId)
+      if (!store.isFriendUnlocked(friendId))
+        friendId = packLib.defaultFriendId
+      store.selectedFriend = friendId
+      var boardId = store.normalizeBoard(obj.currentBoardId || "friends")
+      if (!store.isBoardUnlocked(boardId))
+        boardId = "friends"
+      store.currentBoardId = boardId
       store.rollDay()
-      store.syncPackWorld()
       store.letterCursor = 0
       store.wordPick = 0
       store.wordCursor = 0
       store.ensureTarget()
+      store.bumpBoard()
       store.askingName = false
       store.hydrated = true
     } catch (e) {
@@ -687,7 +641,6 @@ Item {
       hintTimer.stop()
       celebTimer.stop()
       store.hushSounds()
-      huePause()
       store.flushSave()
     } else {
       store.rollDay()
@@ -696,7 +649,6 @@ Item {
   }
 
   onEffectivePackChanged: {
-    store.syncPackWorld()
     store.wordPick = 0
     store.wordCursor = 0
     store.letterCursor = 0
@@ -708,8 +660,6 @@ Item {
     if (store.startMode === "letters")
       store.ensureTarget()
   }
-
-  function huePause() {}
 
   Component.onCompleted: store.ensureProgressDir()
 

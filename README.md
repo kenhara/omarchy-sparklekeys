@@ -1,18 +1,32 @@
 # Sparklekeys
 
 Letter Hunt for a first keyboard. Play is hunt-only (the letter and the
-keyboard). Closet is the dressing room. The bar chip is the character — who
-she is during a lesson. Stars buy a look, hat, and friend she can **see**.
+keyboard). Friends is themed unlock boards. The bar chip is the selected
+emoji — who she is during a lesson.
 
 The world is a **pack** — unicorn ships as the default; dragon is a stub so
-switching characters is data, not a rewrite. Local only. No network.
+switching practice words and accents is data, not a rewrite. Local only. No
+network.
 
 **ID:** `kenhara.sparklekeys`  
 **Author:** Harris Kenny  
 **License:** MIT  
-**Version:** 0.3.0
+**Version:** 0.4.0
 
 **Repo:** https://github.com/kenhara/omarchy-sparklekeys
+
+### 0.4.0
+
+- Play stays hunt-only. Closet is now the Friends room: four themed emoji
+  boards (Friends, Garden, Sky, Wild). One friend unlocks per level.
+- Tap an unlocked friend to wear it on the bar chip. Next pages to the
+  next board once it is unlocked; locked next is dim (`keep practicing` /
+  `Lv 6`).
+- Greeting sits on its own line under the title so `Hi, Jane!` never
+  clips. Friends room (and Play) scroll inside a Flickable when the panel
+  is clamped.
+- Bar chip is the selected emoji (plus optional star count). No Phosphor
+  overlay, hat, or horn.
 
 ### 0.3.0
 
@@ -110,26 +124,26 @@ qmllint -I "$OMARCHY_PATH/shell" *.qml
 
 ## Play
 
-1. **Left-click** the bar character (optional star count) to open the panel.
-   That chip is who she is — the dressed unicorn lives there during a lesson.
+1. **Left-click** the bar emoji (optional star count) to open the panel.
+   That chip is who she is — the selected friend lives there during a lesson.
 2. First open: type a name (letters only) in the centered field and tap
    **That's me!** — or **Skip**.
 3. Hunt the big letter. The matching key glows on the hint keyboard. Play is
-   the hunt only — no companion, no Closet caption.
+   the hunt only.
 4. Right key → stars + celebration + next letter. Wrong key → wiggle + brighter
    glow. No timers, no game over, no score loss.
-5. Tap **Closet** in the header (or open it from Play | Closet) to enter the
-   dressing room. The large unicorn is the hero. Tap an affordable locked look
-   to buy; tap an unlocked look to wear. Can't afford it yet? It says
-   **keep practicing** with a progress bar. **Back to hunt** returns to Play.
-   A hat you buy stays on the unicorn in Closet and on the bar chip.
+5. Tap **Friends** in the header to open the board. New friends show up as
+   you level up. Tap an unlocked friend to wear it on the bar chip. Locked
+   tiles show `Lv N`. **Next** pages to the next themed board once it is
+   unlocked; otherwise it stays dim (`keep practicing` / `Lv 6`). **Back to
+   hunt** returns to Play.
 6. Escape or click-away closes. Progress survives a shell restart.
 
 Letter order starts with the letters of the child's name (when set), then a
 curated easy cycle.
 
-Level is `1 + floor(totalEarned / 15)`, capped at 20. Spending stars does not
-lower the level.
+Level is `1 + floor(totalEarned / 15)`, capped at 20. One friend unlocks per
+level. Friends are not bought with stars.
 
 ### Controls
 
@@ -138,26 +152,27 @@ lower the level.
 | Left-click bar | Toggle panel |
 | Escape | Close panel |
 | Letter keys | Hunt / type (case-insensitive) |
-| Play / Closet (header) | Switch hunt ↔ dressing room |
-| Back to hunt (Closet) | Return to the hunt |
+| Play / Friends (header) | Switch hunt ↔ friends boards |
+| Back to hunt (Friends) | Return to the hunt |
+| Prev / Next (Friends) | Page boards (Next only when unlocked) |
+| Friend tile | Wear if unlocked |
 | Letters / Words switch (under the letter, Play only) | Toggle start mode (mirrors `startMode`) |
 | Sound pill (by stars) | Toggle cartoon hit / sparkle |
-| Closet card | Buy if locked and affordable; else equip |
 | Name: Enter | Save name (first-open flow) |
 | Name: Backspace | Delete a letter |
 
 ## Configure
 
-Parent-facing knobs. Child name, stars, unlocks, and equips live in
+Parent-facing knobs. Child name, stars, selected friend, and stats live in
 `progress.json`, not `shell.json`.
 
 | Schema key | Type | Default | Purpose |
 |------------|------|---------|---------|
-| `characterPack` | enum `unicorn` `dragon` | `unicorn` | Character / theme world |
+| `characterPack` | enum `unicorn` `dragon` | `unicorn` | Practice words / theme accents |
 | `letterCase` | enum `upper` `lower` | `upper` | How targets are shown |
 | `startMode` | enum `letters` `words` | `letters` | Letter Hunt or Word Mode |
 | `dailyGoal` | integer 5–200 | `20` | Correct letters/day for the +5 bonus |
-| `showStarsOnBar` | boolean | `true` | Star count on the bar chip |
+| `showStarsOnBar` | boolean | `true` | Star count next to the emoji on the bar chip |
 | `soundEnabled` | boolean | `true` | Cartoon hit / sparkle (in-panel toggle) |
 
 ```sh
@@ -169,8 +184,8 @@ omarchy bar set kenhara.sparklekeys showStarsOnBar true
 omarchy bar set kenhara.sparklekeys soundEnabled true
 ```
 
-Pack-swap proof: `characterPack dragon` switches glyph, words, and Closet
-catalog with **zero logic changes**.
+Pack-swap proof: `characterPack dragon` switches practice words and accent
+colors with **zero logic changes**. Friends boards are shared, not per-pack.
 
 ## Remove
 
@@ -204,7 +219,9 @@ No freedesktop theme chimes. Credit: [Kenney.nl](https://kenney.nl/assets/interf
 - **Progress:** `${XDG_DATA_HOME:-$HOME/.local/share}/sparklekeys/progress.json`
   Written with Quickshell `FileView` (`atomicWrites`). The plugin `mkdir`s the
   data dir `0700` before the first save. Missing or corrupt file seeds a
-  working default game.
+  working default game. `schemaVersion` 3 stores `selectedFriend` and last
+  viewed board. Old stars / name / stats still hydrate. Old closet unlock
+  keys are ignored for play but not wiped.
 - **Why not `~/.cache`:** this is earned progress. A cache cleaner must not
   wipe her stars. Intentional divergence from sibling plugins.
 - **No network.** No Python. No clipboard or `xdg-open` helpers.
@@ -212,16 +229,14 @@ No freedesktop theme chimes. Credit: [Kenney.nl](https://kenney.nl/assets/interf
 ## Layout
 
 ```
-manifest.json       # kenhara.sparklekeys @ 0.3.0
+manifest.json       # kenhara.sparklekeys @ 0.4.0
 qmldir
-BarWidget.qml       # bar chip + Loader → Panel; owns SparkleStore
-Panel.qml           # KeyboardPanel + slim header (Play|Closet, Sound by stars)
+BarWidget.qml       # bar chip (selected emoji) + Loader → Panel; owns SparkleStore
+Panel.qml           # KeyboardPanel + two-line header (Play|Friends, greeting, Sound)
 SparkleStore.qml    # state, economy, FileView progress, SoundEffect
-PackLibrary.qml     # unicorn + dragon stub (Phosphor names, hats)
-PhosphorIcon.qml    # local Phosphor regular paths (MIT)
+PackLibrary.qml     # unicorn + dragon stub; Friends / Garden / Sky / Wild boards
 PlayView.qml
-ClosetView.qml
-CharacterView.qml
+ClosetView.qml      # Friends room (themed unlock boards)
 KeyboardHint.qml
 Celebration.qml
 StarCounter.qml
@@ -232,13 +247,18 @@ LICENSE
 README.md
 ```
 
+`CharacterView.qml` and `PhosphorIcon.qml` may remain on disk unused by Panel /
+Bar / Friends. Celebration still uses PhosphorIcon for burst glyphs.
+
 ## Security baseline
 
 - No API keys. No outbound network.
 - Disk: one progress file under `~/.local/share/sparklekeys/` (dir 0700).
 - Child name is letters-only, length-capped, shown as `Text.PlainText`.
-- MIT at repo root. Phosphor regular glyphs bundled locally (MIT).
+- MIT at repo root. Phosphor regular glyphs bundled locally (MIT) for
+  celebration bursts only.
 - Two Kenney Interface Sounds clips (CC0) under `sounds/`. No remote audio.
+- No remote Image / SVG. No CI / GitHub Actions.
 
 ## License
 
