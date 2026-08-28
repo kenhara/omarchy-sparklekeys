@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Shapes
 import Quickshell
 import qs.Commons
 import qs.Ui
@@ -186,16 +185,14 @@ BarWidget {
     id: button
     anchors.fill: parent
     bar: root.bar
-    // Em-space reserves the Phosphor character slot (Rocketlauncher pattern).
-    // WidgetButton is text-only — icon is a sibling overlay, not nested.
-    text: {
-      var label = sparkleStore.showStarsOnBar ? String(sparkleStore.stars) : ""
-      return label.length ? ("\u2003 " + label) : "\u2003"
-    }
+    // Em-space reserves the emoji slot. WidgetButton inherits the bar font,
+    // which can tofu color emoji, so the friend sits in a sibling Text.
+    text: sparkleStore.showStarsOnBar ? ("\u2003 " + String(sparkleStore.stars)) : "\u2003"
     fontSize: Style.font.caption
     horizontalMargin: 8.5
     tooltipText: {
-      var tip = "Sparklekeys · Lv " + String(sparkleStore.level)
+      var tip = "Sparklekeys · " + String(sparkleStore.selectedFriendLabel || "Unicorn")
+      tip += " · Lv " + String(sparkleStore.level)
       tip += " · " + String(sparkleStore.stars)
       if (root.panelLoadError && root.panelLoadError.length) {
         var pe = root.panelLoadError
@@ -210,56 +207,15 @@ BarWidget {
     }
   }
 
-  readonly property color chipColor: sparkleStore.skinAccent && sparkleStore.skinAccent.length
-    ? sparkleStore.skinAccent
-    : (root.bar ? root.bar.foreground : "#f2f2f2")
-
-  Item {
+  Text {
     z: 1
     anchors.verticalCenter: button.verticalCenter
     anchors.left: button.left
     anchors.leftMargin: 8.5
-    width: Style.font.caption
-    height: Style.font.caption
-
-    PhosphorIcon {
-      anchors.fill: parent
-      name: sparkleStore.characterGlyph
-      color: root.chipColor
-    }
-
-    PhosphorIcon {
-      z: 1
-      visible: sparkleStore.hatPhosphor && sparkleStore.hatPhosphor.length
-      anchors.horizontalCenter: parent.horizontalCenter
-      anchors.top: parent.top
-      width: Math.round(parent.width * 0.55)
-      height: width
-      name: sparkleStore.hatPhosphor
-      color: root.chipColor
-    }
-
-    Shape {
-      id: chipHorn
-      visible: sparkleStore.characterGlyph === "unicorn"
-      z: 4
-      width: Math.round(parent.width * 0.42)
-      height: Math.round(parent.height * 0.62)
-      x: Math.round(parent.width * 0.14)
-      y: -Math.round(height * 0.08)
-      preferredRendererType: Shape.CurveRenderer
-
-      ShapePath {
-        fillColor: root.chipColor
-        fillRule: ShapePath.WindingFill
-        strokeWidth: 0
-        strokeColor: "transparent"
-        startX: chipHorn.width * 0.52
-        startY: chipHorn.height
-        PathLine { x: chipHorn.width * 0.06; y: 0 }
-        PathLine { x: chipHorn.width * 0.78; y: chipHorn.height * 0.82 }
-        PathLine { x: chipHorn.width * 0.52; y: chipHorn.height }
-      }
-    }
+    text: sparkleStore.selectedEmoji && sparkleStore.selectedEmoji.length
+      ? sparkleStore.selectedEmoji
+      : "🦄"
+    textFormat: Text.PlainText
+    font.pixelSize: Style.font.caption
   }
 }

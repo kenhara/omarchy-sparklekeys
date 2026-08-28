@@ -1,99 +1,101 @@
 # Sparklekeys — design notes
 
-**Status:** 0.3.0  
+**Status:** 0.4.0  
 **Id:** `kenhara.sparklekeys`  
 **Peers:** Scriptural, Rocketlauncher, Encyclopedic, Enricherino, Compliantish
 
 ## Why
 
-A six-year-old cannot hold "type O" and "look at my crowned unicorn" at once.
+A six-year-old cannot hold "type O" and "look at my friends board" at once.
 Synthesis-style: one problem owns the screen. Play is the hunt — the target
-letter and the keyboard, nothing else. Closet is a separate room: the reward,
-the dressing-up, the character as hero. The bar chip is the persistent tray of
-who she is, so the unicorn does not need to sit beside the letter during a
-lesson.
+letter and the keyboard, nothing else. Friends is a separate room: themed
+emoji boards that unlock as she levels up. Tap an unlocked friend to wear it
+on the bar chip. The chip is the persistent tray of who she is, so the hunt
+never shares a stage with the collection.
 
-0.1 persisted closet purchases she could not see (emoji face, faint halo,
-tiny friend, banner wash). 0.2 made dress-up visible: Phosphor character,
-hat overlay, friend overlay, skin tint, bar chip icon. 0.3 restages the
-rooms so hunt and closet never share a stage.
+0.1 persisted closet purchases she could not see. 0.2 made dress-up visible
+with Phosphor glyphs. 0.3 restaged hunt and closet as separate rooms. 0.4
+replaces the dressed-unicorn closet with IXL-style themed emoji boards.
+Play stays hunt-only. Greeting uses her saved name (Charli). Default
+selected friend is the unicorn.
 
 ## The pack is the world
 
 Nothing in the game logic is gendered or unicorn-specific. A pack is data:
 
-- `character` — PhosphorIcon name (`unicorn` / `dragon`), not emoji
 - practice words
-- default skin
-- cosmetics: skins (aura/accent tint), hats (phosphor overlay), companions
-  (friend glyph). Effects stay in data for celebration bursts but are not a
-  Closet row. Banners dropped from closet data.
+- default accent / aura (static theme colors — pink for unicorn, ember for
+  dragon). No rainbow hue timer.
 
 Unicorn is the default pack. Dragon is a stub so `characterPack: dragon`
-swaps the whole world with **zero logic changes**.
+swaps words and accents with **zero logic changes**. Kid-facing Look / Hat /
+Friend cosmetics are gone from pack objects. Packs do not own the Friends
+boards.
 
 Built-in packs live in `PackLibrary.qml`. Access only through `get` / `ids` /
-`exists`.
+`exists`. Friend boards live in the same library (`board` / `friend` /
+`boardIds`).
 
-Cosmetic ids are unique across a pack (rainbow skin is `rainbow`; the
-celebration style is `rainbow-burst`, never the same id). Hat `none` and
-friend `none` share the free `none` unlock — both cost 0.
+## Friends boards
 
-## Character rendering
+Four boards of five. Level formula is `1 + floor(totalEarned / 15)`, cap 20.
+One friend unlocks per level. A board unlocks when she reaches that board's
+first friend level (the previous board is complete at the same moment).
 
-`CharacterView` draws a local PhosphorIcon (Item + Shape + PathSvg,
-viewBox 0 0 256 256, tint via `color`). No `Image.source`, no remote SVG,
-no webfont. Phosphor has no unicorn or dragon glyph — both alias to the
-official regular `horse` path. Hats and friends use crown, baseball-cap,
-flower-lotus, star, butterfly, cat, egg. A Shape horn sits on the unicorn
-forehead (in front of a crown so it still peeks); idle sparkles orbit the
-halo while the Closet is open. Panel height follows the column (no black
-void). Sound sits by the stars; Letters|Words by the hunt.
+| Board   | Unlocks | Friends | Emoji | Levels |
+|---------|---------|---------|-------|--------|
+| Friends | Lv 1    | unicorn, cat, dog, bunny, frog | 🦄 🐱 🐶 🐰 🐸 | 1–5 |
+| Garden  | Lv 6    | blossom, rose, sunflower, tulip, daisy | 🌸 🌹 🌻 🌷 🌼 | 6–10 |
+| Sky     | Lv 11   | star, moon, rainbow, sparkles, sun | ⭐ 🌙 🌈 ✨ 🌞 | 11–15 |
+| Wild    | Lv 16   | bear, panda, tiger, elephant, dragon | 🐻 🐼 🐯 🐘 🐉 | 16–20 |
 
-`CharacterView` is the Closet hero only — not a companion column on Play,
-not a second face in the header. The dressed character already lives on
-the **bar chip**. Buying a hat updates the Closet model in place. The
-character is not a tap target for room switching.
+Wide-adoption emoji only (mostly Unicode 6.0; unicorn is 8.0). No new-era
+emoji (no wands, fairies, pixies).
 
-Skins tint the halo **and** the Phosphor fill. Rainbow hue-shifts both
-while the panel is open (timer paused when `!opened`).
+Emoji `Text` must **not** set `font.family` to monospace / `contentFontFamily`
+— that tofu's color emoji. Leave `font.family` unset on emoji-only Text so
+the system color-emoji font (Noto Color Emoji) is used.
 
-Emoji `Text` is last-resort fallback if a path is missing.
+`isFriendUnlocked(id)` is `level >= that friend's level`.
+`isBoardUnlocked(id)` is `level >= that board's unlockLevel`.
+Unlocks are level-gated only — do not spend stars to buy friends.
+
+`selectedFriend` (default `unicorn`) persists. `selectedEmoji` /
+`selectedFriendLabel` are derived. `currentBoardId` is which board is
+showing (persisted as last viewed). `boardRev` bumps on select / page /
+award so tiles refresh.
+
+Tap an unlocked friend to select it (accent ring). Locked tiles show the
+same emoji at low opacity plus `Lv N`. Next is only tappable when the next
+board is unlocked; otherwise dim it (`keep practicing` / `Lv 6`). Prev
+always works once she has left board 1.
 
 ## Bar chip
 
-WidgetButton is text-only. Match Rocketlauncher: em-space in `text` plus a
-sibling PhosphorIcon overlay tinted with `skinAccent`. Optional star count
-as the text after the em-space. Tooltip: `Sparklekeys · Lv N · stars`.
-This chip is the tray of who she is during a lesson.
+WidgetButton is text-only. The selected emoji goes in `WidgetButton.text`,
+plus an optional star count. No Phosphor overlay, no hat overlay, no horn
+Shape. Tooltip: `Sparklekeys · Friend · Lv N · stars`. This chip is the
+tray of who she is during a lesson.
 
-## Closet
+## Header
 
-Kid-facing rows: **Look / Hat / Friend** only. No Effects or Banners
-store rows. `equippedEffect` defaults to sparkles; rainbow skin maps to
-the rainbow burst internally.
+Two-line header so `Hi, Charli!` never clips:
 
-Cards show a Phosphor preview plus wearing / tap to wear / ⭐ cost /
-keep practicing. Lede: "Buy a look. It stays on your unicorn."
+1. Title (tiny 🦄 Text, no Phosphor glyph) + Play | Friends room switch
+2. Greeting on its own line (`Hi, Name!`, wrap, no ElideRight) with Lv,
+   stars, and Sound on the right
 
-`closetRev` bumps on buy/equip/award so function-backed card state
-notifies.
+Unofficial footer under the body. Room switch is hidden until That's me! /
+Skip. Internal `viewMode` stays `"closet"` so call sites do not churn; the
+kid-facing label is **Friends**.
 
-Hats persist as `hat` in `equippedByPack`. Old `banner` keys are ignored
-on hydrate. `schemaVersion` 2.
+## Scroll
 
-The hunt is gone from this room. A **Back to hunt** pill under the hero
-is the kid-facing door back to Play. Header Play | Closet is quiet chrome
-for the same pair of rooms.
-
-## Levels
-
-From `totalEarned` (never spendable `stars`, so buying does not de-level):
-
-`level = 1 + floor(totalEarned / 15)`, cap 20.
-
-Shown as `Lv N` in the header job-line (`Hi, Name!` · pack · Lv N) next
-to the product title, with stars and a thin progress to the next level.
+The body below the header (Play / Friends) sits in a `Flickable` with
+`clip: true`, vertical flick, `contentHeight` from the inner column.
+`KeyboardPanel.contentHeight` uses `fittedContentHeight` of the desired
+(unclamped) height: if the board is short, hug content; if clamped, the
+Flickable fills the leftover height and overflow scrolls.
 
 ## Letters / Words
 
@@ -105,16 +107,15 @@ way Panel already persists schema knobs.
 
 First-open `askingName` flow stays. Centered field, no companion on the
 left. Tapping the greeting does **not** edit the name (`beginNameEdit`
-remains unused). No `· tap name` subtitle. Room switch is hidden until
-That's me! / Skip.
+remains unused). No `· tap name` subtitle.
 
 ## No-fail, shift-free, low text
 
 - Wrong key: target wiggles, hint key glows brighter. No red X, no timer, no
   score loss, no streak reset.
 - Match compares `event.text.toLowerCase()` — she never needs Shift.
-- Big letter + keyboard hint carry Play. Phosphor character carries Closet
-  and the bar chip.
+- Big letter + keyboard hint carry Play. Emoji friends carry the Friends
+  room and the bar chip.
 
 ## Progress lives in share, not cache
 
@@ -126,7 +127,12 @@ missing data dir does not drop stars. FileView I/O itself is unchanged.
 `childName` is typed in-panel (first exercise) and stored here, not in the
 manifest schema.
 
-Unlocks and equips are keyed by pack so worlds stay separate.
+`schemaVersion` 3. Persist `selectedFriend` and last-viewed `currentBoardId`.
+Hydrate old stars / name / stats. Ignore old `unlocked` / `equipped` / hat /
+skin for gameplay; do not wipe those file keys if present.
+
+Pack accent / aura come from the pack's default skin colors (pink / ember)
+as static theme accents. Celebration keeps default sparkles.
 
 ## Shell contract
 
@@ -142,16 +148,17 @@ Copy Scriptural / Rocketlauncher:
 - `Style.font.body` / `bodySmall` / `caption` only
 - Theme tokens lead (`bar.foreground`, `Color.popups.background`); pack
   accents overlay, they do not replace the palette
-- Pause celebration / wiggle / rainbow hue / idle sparkles when `!opened`
+- Pause celebration / wiggle when `!opened`
 - Store is `Item`-wrapped
-- Slim header: Phosphor unicorn + "Sparklekeys", one quiet Play | Closet
-  pair, then `Hi, Name!` · pack · Lv N, then stars + Sound. Unofficial
-  footer. `contentHeight` follows `column.implicitHeight` (no padded 760
-  void).
-- Play is hunt-only (target + keyboard floor). Closet is a dressing room
-  (large CharacterView hero, Look / Hat / Friend under it). Do not tap the
-  unicorn to switch rooms. Do not put five controls in a row. Letters|Words
-  stays under the letter on Play. Sound stays by the stars.
+- Two-line header: title + Play | Friends, then greeting line (Lv + stars +
+  Sound), unofficial footer. `contentHeight` uses `fittedContentHeight`.
+- Play is hunt-only (target + keyboard floor). Friends is themed unlock
+  boards. Do not invent menus. Letters|Words stays under the letter on Play.
+  Sound stays by the stars.
+
+`CharacterView` is unused (file may remain on disk). `PhosphorIcon.qml` can
+stay on disk for Celebration bursts; do not load it from Panel / Bar /
+Closet.
 
 ## Economy
 
@@ -159,7 +166,8 @@ Copy Scriptural / Rocketlauncher:
 - +2 ⭐ every 5-in-a-row (no reset on a miss)
 - +5 ⭐ the first time `dailyGoal` is hit in a local day
 - Word complete: +2 bonus and a bigger burst
-- Closet: free default in every kid-facing category; cheap first unlocks (10 ⭐)
+- Friends unlock by level from `totalEarned` (spending is gone; buying does
+  not exist, so earning never de-levels)
 
 ## Sound
 
@@ -171,8 +179,8 @@ theme, no `pw-play`. `playHit(special)` from `awardStars` (which
 Cooldown 90 ms. Stop when `!panelOpen`. Default `soundEnabled` ON.
 In-panel Sound toggle via `persistSetting('soundEnabled', …)`.
 
-## Non-goals (0.3)
+## Non-goals (0.4)
 
 Network, multi-child profiles, marketplace submit, home-row curriculum,
-user-dropped packs, kid-facing Effects/Banners store, tap-name, tap-the-
-unicorn to switch rooms.
+user-dropped packs, dressing-room cosmetics, Phosphor character overlays,
+tap-name, remote Image/SVG, CI / GitHub Actions.
