@@ -219,7 +219,7 @@ Panel {
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             flickableDirection: Flickable.VerticalFlick
-            interactive: contentHeight > height && !(closetView && closetView.inspectOpen)
+            interactive: contentHeight > height
             contentWidth: width
             contentHeight: innerCol.implicitHeight
 
@@ -254,7 +254,6 @@ Panel {
                 accent: root.packAccent
                 aura: root.packAura
                 fontFamily: root.contentFontFamily
-                overlayHost: inspectHost
               }
             }
           }
@@ -272,6 +271,13 @@ Panel {
           }
         }
 
+        Connections {
+          target: closetView
+          function onInspectOpenChanged() {
+            flick.contentY = 0
+          }
+        }
+
         Celebration {
           anchors.fill: parent
           playing: liveStore ? liveStore.celebrating : false
@@ -282,15 +288,6 @@ Panel {
           active: root.opened
         }
 
-        Item {
-          id: inspectHost
-          anchors.fill: flick
-          z: 40
-          visible: closetView && closetView.inspectOpen
-            && liveStore && liveStore.viewMode === "closet"
-          enabled: visible
-          clip: true
-        }
       }
     }
   }

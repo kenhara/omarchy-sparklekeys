@@ -5,7 +5,7 @@ import QtMultimedia
 
 // Sparklekeys state + economy + persistence.
 // Item-wrapped (family contract). No network.
-// Progress I/O is scripts/progress.py (HC-05 read + exclusive write), not FileView.
+// Progress I/O is scripts/progress.py (HC-05 read + exclusive stdin write), not FileView.
 // Progress lives in ~/.local/share (earned stars — never a cache wipe).
 Item {
   id: store
@@ -28,7 +28,7 @@ Item {
   property string selectedFriend: "sparkles"
   property string currentBoardId: "friends"
   // currentBoardId is session-snapped on Trophies enter / level-up; still
-  // written in schema 3 so persist shape does not change.
+  // written in schema 4 so persist shape does not change.
   // Old closet keys round-trip so we do not wipe a 0.3 file. Unused for play.
   property var unlockedByPack: ({})
   property var equippedByPack: ({})
@@ -43,6 +43,7 @@ Item {
   // Bundled Kenney CC0 clips only — Qt.resolvedUrl stays inside the plugin.
   readonly property url hitSoundUrl: Qt.resolvedUrl("sounds/hit.wav")
   readonly property url sparkleSoundUrl: Qt.resolvedUrl("sounds/sparkle.wav")
+  readonly property url levelSoundUrl: Qt.resolvedUrl("sounds/level.wav")
 
   // Play state (not persisted, except via award/save)
   property string viewMode: "play"
@@ -105,6 +106,7 @@ Item {
   })
   property string progressBuf: ""
   property bool progressOverflow: false
+  property string _pendingWriteJson: ""
 
   readonly property string effectivePack: store.normalizePack(store.characterPack)
 
@@ -165,12 +167,15 @@ Item {
       return "Hi, " + name + "!"
     return "Hi!"
   }
+  readonly property int starsPerLevel: 20
   readonly property int level: {
-    var n = 1 + Math.floor(Math.max(0, Number(store.totalEarned) || 0) / 15)
+    var per = store.starsPerLevel
+    var n = 1 + Math.floor(Math.max(0, Number(store.totalEarned) || 0) / per)
     return Math.max(1, n)
   }
   readonly property real levelProgress: {
-    return (Math.max(0, Number(store.totalEarned) || 0) % 15) / 15
+    var per = store.starsPerLevel
+    return (Math.max(0, Number(store.totalEarned) || 0) % per) / per
   }
 
   function bumpBoard() {
@@ -254,7 +259,10 @@ Item {
   }
 
   function boardForLevel(level) {
-    var lv = Math.max(1, Math.min(20, Math.floor(Number(level) || 1)))
+    var cap = 40
+    if (typeof packLib.maxTrophyLevel === "number" && packLib.maxTrophyLevel > 0)
+      cap = packLib.maxTrophyLevel
+    var lv = Math.max(1, Math.min(cap, Math.floor(Number(level) || 1)))
     if (typeof packLib.boardForLevel === "function")
       return packLib.boardForLevel(lv)
     if (lv <= 5)
@@ -263,7 +271,15 @@ Item {
       return packLib.board("garden")
     if (lv <= 15)
       return packLib.board("sky")
-    return packLib.board("wild")
+    if (lv <= 20)
+      return packLib.board("wild")
+    if (lv <= 25)
+      return packLib.board("ocean")
+    if (lv <= 30)
+      return packLib.board("treats")
+    if (lv <= 35)
+      return packLib.board("wheels")
+    return packLib.board("party")
   }
 
   // Snap to the board for her current level. Room enter / level-up only —
@@ -485,10 +501,16 @@ Item {
     store.lastAward = n
     store.lastAwardReason = reason || ""
     store.celebrating = true
-    store.specialCelebrate = !!special
-    store.playHit(!!special)
+    var leveled = store.level > prevLevel
+    if (leveled)
+      store.lastAwardReason = "level"
+    store.specialCelebrate = !!special || leveled
+    if (leveled)
+      store.playLevel()
+    else
+      store.playHit(!!special)
     celebTimer.restart()
-    if (store.viewMode === "closet" && store.level > prevLevel)
+    if (store.viewMode === "closet" && leveled)
       store.showBoardForLevel()
     else
       store.bumpBoard()
@@ -507,12 +529,8 @@ Item {
     var gained = 1
     var special = !!opts.special
     var reason = "letter"
-    if (store.streak > 0 && (store.streak % 5) === 0) {
-      gained += 2
-      reason = "streak"
-    }
     if (opts.wordBonus) {
-      gained += 2
+      gained += 5
       reason = "word"
       special = true
       store.lessonsDone += 1
@@ -623,6 +641,17 @@ Item {
     store.scheduleSave()
   }
 
+  function neutralizeUntrusted(s) {
+    // Model-entry neutralize (HANCORE display lock). Strip tags + markdown
+    // images, leftover <>, collapse ASCII controls. Do not entity-escape.
+    var t = String(s == null ? "" : s)
+    t = t.replace(/<[^>]*>/g, "")
+    t = t.replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+    t = t.replace(/[<>]/g, "")
+    t = t.replace(/[\x00-\x1F\x7F]/g, " ")
+    return t
+  }
+
   function sanitizeName(s) {
     var t = String(s || "").replace(/[^A-Za-z]/g, "")
     if (t.length > 16)
@@ -710,7 +739,7 @@ Item {
 
   function toProgress() {
     return {
-      "schemaVersion": 3,
+      "schemaVersion": 4,
       "activePack": store.effectivePack,
       "childName": store.childName,
       "stars": store.stars,
@@ -744,23 +773,31 @@ Item {
         store.seedDefaults()
         return
       }
-      store.childName = store.sanitizeName(obj.childName || "")
+      store.childName = store.sanitizeName(store.neutralizeUntrusted(obj.childName || ""))
       store.stars = store.capInt(obj.stars)
       store.totalEarned = store.capInt(obj.totalEarned)
+      var schema = store.capInt(obj.schemaVersion)
+      var didRescale = false
+      if (schema < 4) {
+        var per = store.starsPerLevel
+        store.stars = Math.floor(store.stars * per / 15)
+        store.totalEarned = Math.floor(store.totalEarned * per / 15)
+        didRescale = true
+      }
       store.unlockedByPack = store.capObject(obj.unlocked, 8192)
       store.equippedByPack = store.capObject(obj.equipped, 8192)
       var stats = (obj.stats && typeof obj.stats === "object") ? obj.stats : ({})
       store.lettersTyped = store.capInt(stats.lettersTyped)
       store.bestStreak = store.capInt(stats.bestStreak)
       store.lessonsDone = store.capInt(stats.lessonsDone)
-      store.lastDay = store.capField(stats.lastDay || "", 16)
+      store.lastDay = store.capField(store.neutralizeUntrusted(stats.lastDay || ""), 16)
       store.todayCount = store.capInt(stats.todayCount)
       store.dailyGoalHit = !!stats.dailyGoalHit
-      var friendId = store.normalizeFriend(store.capField(obj.selectedFriend || packLib.defaultFriendId, 32))
+      var friendId = store.normalizeFriend(store.capField(store.neutralizeUntrusted(obj.selectedFriend || packLib.defaultFriendId), 32))
       if (!store.canWearFriend(friendId))
         friendId = packLib.defaultFriendId
       store.selectedFriend = friendId
-      var boardId = store.normalizeBoard(store.capField(obj.currentBoardId || "friends", 32))
+      var boardId = store.normalizeBoard(store.capField(store.neutralizeUntrusted(obj.currentBoardId || "friends"), 32))
       if (!store.isBoardUnlocked(boardId))
         boardId = "friends"
       store.currentBoardId = boardId
@@ -773,6 +810,8 @@ Item {
       store.bumpBoard()
       store.askingName = false
       store.hydrated = true
+      if (didRescale)
+        store.scheduleSave()
     } catch (e) {
       console.warn("kenhara.sparklekeys: progress.json corrupt — seeding defaults")
       store.seedDefaults()
@@ -816,27 +855,43 @@ Item {
       return
     if (!store.progressPath || !store.progressPath.length || !store.helperPath.length)
       return
-    if (progressWriteProc.running)
-      return
     try {
       var body = JSON.stringify(store.toProgress(), null, 2) + "\n"
       if (body.length > store.maxProgressBytes) {
         console.warn("kenhara.sparklekeys: progress too large to save")
         return
       }
+      store._pendingWriteJson = body
       store._dirty = false
+      if (progressWriteProc.running)
+        return
       progressWriteProc.command = [
-        "python3", "-B", store.helperPath,
+        "/usr/bin/python3", "-B", store.helperPath,
         "--write",
         "--file", store.progressPath,
-        "--cap", String(store.maxProgressBytes),
-        "--data", body
+        "--cap", String(store.maxProgressBytes)
       ]
       progressWriteProc.environment = store.helperEnv
+      progressWriteProc.stdinEnabled = true
       progressWriteProc.running = true
     } catch (e) {
       console.warn("kenhara.sparklekeys: save failed")
     }
+  }
+
+  function onProgressWriteRunningChanged() {
+    if (!progressWriteProc.running)
+      return
+    var blob = store._pendingWriteJson || ""
+    if (!blob.length) {
+      progressWriteProc.stdinEnabled = false
+      return
+    }
+    try {
+      progressWriteProc.write(blob)
+    } catch (e) {}
+    progressWriteProc.stdinEnabled = false
+    store._pendingWriteJson = ""
   }
 
   function scheduleSave() {
@@ -882,7 +937,7 @@ Item {
   Process {
     id: progressReadProc
     running: false
-    command: ["python3", "-B", store.helperPath, "--file", store.progressPath, "--cap", String(store.maxProgressBytes)]
+    command: ["/usr/bin/python3", "-B", store.helperPath, "--file", store.progressPath, "--cap", String(store.maxProgressBytes)]
     environment: store.helperEnv
     stdout: SplitParser {
       splitMarker: ""
@@ -906,11 +961,15 @@ Item {
   Process {
     id: progressWriteProc
     running: false
+    stdinEnabled: true
     environment: store.helperEnv
+    onRunningChanged: store.onProgressWriteRunningChanged()
     onExited: function(exitCode, exitStatus) {
       if (exitCode !== 0)
         console.warn("kenhara.sparklekeys: progress write failed")
-      if (store._dirty)
+      if (store._pendingWriteJson && store._pendingWriteJson.length)
+        store.flushSave()
+      else if (store._dirty)
         saveDebounce.restart()
     }
   }
@@ -950,7 +1009,9 @@ Item {
     var s = String(u || "")
     if (!s.length)
       return false
-    return s === String(store.hitSoundUrl) || s === String(store.sparkleSoundUrl)
+    return s === String(store.hitSoundUrl)
+      || s === String(store.sparkleSoundUrl)
+      || s === String(store.levelSoundUrl)
   }
 
   function playHit(special) {
@@ -965,9 +1026,23 @@ Item {
     fx.play()
   }
 
+  function playLevel() {
+    if (!store.soundEnabled || !store.panelOpen)
+      return
+    // Level fanfare replaces the letter-hit coin; do not wait on the 90ms
+    // hit cooldown or it can swallow the cue.
+    soundCooldown.restart()
+    if (!levelFx || !store.allowedSoundUrl(levelFx.source))
+      return
+    hitFx.stop()
+    sparkleFx.stop()
+    levelFx.play()
+  }
+
   function hushSounds() {
     hitFx.stop()
     sparkleFx.stop()
+    levelFx.stop()
   }
 
   SoundEffect {
@@ -979,6 +1054,12 @@ Item {
   SoundEffect {
     id: sparkleFx
     source: store.sparkleSoundUrl
+    volume: 0.5
+  }
+
+  SoundEffect {
+    id: levelFx
+    source: store.levelSoundUrl
     volume: 0.5
   }
 

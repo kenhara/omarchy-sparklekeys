@@ -1,6 +1,6 @@
 # Sparklekeys — design notes
 
-**Status:** 0.8.0  
+**Status:** 0.9.0  
 **Id:** `kenhara.sparklekeys`  
 **Peers:** Scriptural, Rocketlauncher, Encyclopedic, Enricherino, Compliantish
 
@@ -33,7 +33,14 @@ name screen does not return. Existing progress.json users do not see
 askingName again. 0.8 moves progress I/O off FileView onto
 `scripts/progress.py` (HC-05 read + exclusive write), deletes unused
 CharacterView, and drops leftover chrome (Trophies lede, Next/inspect
-"keep practicing", Play "Type the word").
+"keep practicing", Play "Type the word"). 0.9 turns trophy inspect into a
+full Trophies subpanel (giant emoji a six-year-old can see), slows stars a
+little (`starsPerLevel` 20, no streak extra, word +5), adds a level-up
+fanfare, and grows the case to eight boards / 40 levels. Schema 4 rescales
+old totals so displayed level does not drop. Progress write is helper
+**stdin** (QML does not pass `--data` on argv). `--file` paths go through
+`is_safe_config_path` on both read and write. Isolated `/tmp` prove:
+`scripts/prove-progress.sh`.
 
 ## The pack is the world
 
@@ -56,13 +63,13 @@ avatar catalog so eagle 🦅 resolves for the bar chip and signup tiles.
 
 ## Trophies boards
 
-Four boards of twenty (4 rows × 5 cols). Level formula is
-`1 + floor(totalEarned / 15)` — do not slow stars. Displayed level (header,
-bar tooltip) is **uncapped**. `boardForLevel` / trophy unlocks still clamp
-at 20. After 20, Trophies stay complete (Wild board); the header can show
-Lv 21+. Four trophies unlock per level, filling left-to-right,
-top-to-bottom. A board unlocks when she reaches that board's first trophy
-level (the previous board is complete at the same moment).
+Eight boards of twenty (4 rows × 5 cols). Level formula is
+`1 + floor(totalEarned / starsPerLevel)` with `starsPerLevel = 20` (was 15).
+Displayed level (header, bar tooltip) is **uncapped**. `boardForLevel` /
+trophy unlocks clamp at 40. After 40, Trophies stay complete (Play board);
+the header can show Lv 41+. Four trophies unlock per level, filling
+left-to-right, top-to-bottom. A board unlocks when she reaches that board's
+first trophy level (the previous board is complete at the same moment).
 
 | Board   | Unlocks | Levels | 4 per level (ids) |
 |---------|---------|--------|-------------------|
@@ -70,6 +77,10 @@ level (the previous board is complete at the same moment).
 | Garden  | Lv 6    | 6–10   | blossom…tanabata |
 | Sky     | Lv 11   | 11–15  | star, fireworks…wave |
 | Wild    | Lv 16   | 16–20  | bear…whale2 |
+| Ocean   | Lv 21   | 21–25  | sea-fish…hot-springs |
+| Treats  | Lv 26   | 26–30  | apple…cake |
+| Wheels  | Lv 31   | 31–35  | car…metro |
+| Play    | Lv 36   | 36–40  | soccer…balloon |
 
 Wide-adoption emoji only (mostly Unicode 6.0; unicorn and sun-with-face are
 8.0). No new-era emoji on boards (no fox, butterfly, owl, fairy, wand).
@@ -84,7 +95,8 @@ Labels (Lv N, room chrome) can use `contentFontFamily`.
 `isFriendUnlocked(id)` is `level >= that trophy's level` (identity `sparkles` is always unlocked).
 `isBoardUnlocked(id)` is `level >= that board's unlockLevel`.
 `boardForLevel(level)` is friends (1–5), garden (6–10), sky (11–15),
-wild (16–20); the argument is clamped to 20 so Lv 21+ still opens Wild.
+wild (16–20), ocean (21–25), treats (26–30), wheels (31–35), play (36–40);
+the argument is clamped to 40 so Lv 41+ still opens Play.
 `showBoardForLevel()` sets `currentBoardId` from `boardForLevel(store.level)`
 and bumps `boardRev`. Call it from `setViewMode("closet")`, when level
 increases while `viewMode` is closet, and on panel open if already in closet.
@@ -94,7 +106,7 @@ Unlocks are level-gated only — do not spend stars to buy trophies.
 
 `selectedFriend` (default `sparkles`) persists. `selectedEmoji` /
 `selectedFriendLabel` are derived. `currentBoardId` is which board is
-showing (session-snapped on Trophies enter; still written in schema 3).
+showing (session-snapped on Trophies enter; still written in schema 4).
 `boardRev` bumps on select / page / award / snap so tiles refresh.
 
 ✨ is the **product mark**: always unlocked at level 1, identity-only (not a
@@ -107,16 +119,18 @@ header mark. Pack `characterPack: unicorn` is unchanged.
 
 Every board trophy (and identity sparkles) has a kid-simple `blurb`.
 
-Tap a tile (locked or unlocked) to open an in-room inspect overlay: dim
-scrim over the board, a card with a huge emoji (~3–4× tile size), **title**,
-and one or two short sentences. Unlocked: full-color emoji, and `selectFriend`
-so it wears on the bar. Locked: gray/faded emoji (same stone+opacity as
-tiles), real title + blurb, plus `Lv N` — do not wear a
-locked trophy. Close by tapping the scrim or a **Close** pill. Escape already
-closes the whole panel via PanelKeyCatcher; do not steal it for inspect.
-One inspect at a time; opening another tile replaces the card. Overlay sits
-on the Flickable viewport (not a new room, not a browser). Keep Prev/Next,
-Back to hunt, 4×5 grid, auto-open current-level board, Flickable.
+Tap a tile (locked or unlocked) to open inspect **inside Trophies** — not
+a third room-switch tab, not `overlayHost` / `inspectHost` / reparented
+`inspectLayer`. The board title / nav / grid hide. A full-width inspect
+column fills the Trophies room: giant emoji (at least `Style.font.body * 16`
+or ~55% of width, no `font.family`; tap it to go back), **title**, and one
+or two short sentences. Unlocked:
+full-color emoji, and `selectFriend` so it wears on the bar. Locked:
+gray/faded emoji (same ~0.22 opacity as tiles), real title + blurb, plus
+`Lv N` — do not wear a locked trophy. **Back** returns to the same board
+(Prev/Next state preserved). Escape already closes the whole panel via
+PanelKeyCatcher; do not steal it for inspect. While inspect is open the
+column is the Flickable content so giant emoji + blurb can still scroll.
 
 Locked tiles: stone-gray background (not accent), emoji at ~0.22 opacity,
 `Lv N` caption. Color emoji cannot be tinted with `Text.color`; do not
@@ -236,23 +250,43 @@ Process and does **not** `JSON.parse`.
 **Exclusive write:** helper `mkdir` dest dir 0700; exclusive tmp
 `O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW` 0600, write, fsync, `os.replace`.
 Never opens dest for write (symlink dest is replaced, not followed).
+Payload is **stdin only** (64 KiB cap; oversize reject, never
+truncate-and-parse). QML Process `write()` + `stdinEnabled`; no `--data`
+on argv. Helper emits nothing on write (no stdout, no stderr dump).
+
+`--file` on read **and** write must pass `is_safe_config_path` (absolute
+local path: starts with `/`, no `://`, no `\\`, no leading `-`). Fail
+closed: exit 1, no body.
+
 Every Process.environment is `PATH=/usr/bin:/bin` and
-`PYTHONDONTWRITEBYTECODE=1`; argv is `python3 -B`.
+`PYTHONDONTWRITEBYTECODE=1`; argv is `/usr/bin/python3 -B`.
 
 QML keeps `hydrate` / `seedDefaults` / `toProgress` JSON shape
-(`schemaVersion` 3). After parse, cap accepted fields: `childName` 16
-letters, star/stat ints, `selectedFriend` / `currentBoardId` id length 32,
+(`schemaVersion` 4). After parse, neutralize untrusted strings at model
+entry (strip `<>` + markdown images, collapse ASCII controls; do not
+entity-escape) then cap accepted fields: `childName` 16 letters,
+star/stat ints, `selectedFriend` / `currentBoardId` id length 32,
 `lastDay` 16, old `unlocked` / `equipped` objects size-capped (not wiped).
+Then `normalizeFriend` / `normalizeBoard`.
+
+Isolated prove (never the real share dir): `scripts/prove-progress.sh`
+under `/tmp` — py_compile, missing/small/oversize, planted symlink,
+FIFO-no-writer (`timeout 5`, not 124), dest-symlink write, FIFO dest
+write, `--check-path` rejects `https://`, relative, `://`, `\\`,
+leading `-`. 2026-08-30: all PASS.
 
 `childName` is typed in-panel (first exercise) and stored here, not in the
 manifest schema.
 
-`schemaVersion` 3. Persist `selectedFriend` (and last-viewed `currentBoardId`
-for shape stability). Hydrate old `selectedFriend` ids that still exist
-(unicorn, cat, sparkles, …). Unknown ids → sparkles. The twelve first-run
-avatars stay worn even if that trophy is still locked. Hydrate old stars / name / stats.
-Ignore old `unlocked` / `equipped` / hat / skin for gameplay; do not wipe
-those file keys if present.
+`schemaVersion` 4. Persist `selectedFriend` (and last-viewed `currentBoardId`
+for shape stability). On load, if `schemaVersion < 4`, scale `totalEarned`
+and `stars` by `floor(n * 20 / 15)` so `1+floor(e/20)` matches the old
+`1+floor(e/15)` as closely as integer math allows, then persist 4. Hydrate
+old `selectedFriend` ids that still exist (unicorn, cat, sparkles, …).
+Unknown ids → sparkles. The twelve first-run avatars stay worn even if that
+trophy is still locked. Hydrate old stars / name / stats. Ignore old
+`unlocked` / `equipped` / hat / skin for gameplay; do not wipe those file
+keys if present.
 
 Pack accent / aura come from the pack's default skin colors (pink / ember)
 as static theme accents. Celebration keeps default sparkles.
@@ -284,24 +318,28 @@ do not load it from Panel / Bar / Trophies.
 
 ## Economy
 
-- +1 ⭐ per correct letter
-- +2 ⭐ every 5-in-a-row (no reset on a miss)
+- +1 ⭐ per correct letter (keep the +N overlay on the letter box)
+- No streak extra (it sped letter-only grinding; streak count still tracks)
+- +5 ⭐ extra on word complete (`reason = "word"`, special burst)
 - +5 ⭐ the first time `dailyGoal` is hit in a local day
-- Word complete: +2 bonus and a bigger burst
+- `starsPerLevel = 20` (single named constant for `level` and `levelProgress`)
 - Trophies unlock by level from `totalEarned` (spending is gone; buying does
-  not exist, so earning never de-levels)
+  not exist, so earning never de-levels). Do not rewind a displayed level.
 
 ## Sound
 
-Kenney Interface Sounds (CC0) bundled as `sounds/hit.wav` (correct letter)
-and `sounds/sparkle.wav` (word / daily / special). `SoundEffect` +
+Kenney Interface Sounds (CC0) bundled as `sounds/hit.wav` (correct letter),
+`sounds/sparkle.wav` (word / daily / special), and `sounds/level.wav`
+(level-up fanfare, Kenney `confirmation_003`). `SoundEffect` +
 `Qt.resolvedUrl` only — no user path, no Image/file tricks, no freedesktop
-theme, no `pw-play`. `playHit(special)` from `awardStars` (which
-`noteCorrectLetter` already calls). `miss()` is silence. Volume 0.5.
-Cooldown 90 ms. Stop when `!panelOpen`. Default `soundEnabled` ON.
-In-panel Sound toggle via `persistSetting('soundEnabled', …)`.
+theme, no `pw-play`. `awardStars` plays `playLevel()` when `level` increased
+(skip the letter-hit coin; the fanfare is the cue) else `playHit(special)`.
+Level-up must not get eaten by the 90 ms hit cooldown. `allowedSoundUrl`
+allowlists all three. `hushSounds` stops all three. `miss()` is silence.
+Volume 0.5. Stop when `!panelOpen`. Default `soundEnabled` ON. In-panel
+Sound toggle via `persistSetting('soundEnabled', …)`.
 
-## Non-goals (0.8)
+## Non-goals (0.9)
 
 Network, multi-child profiles, marketplace submit, home-row curriculum,
 user-dropped packs, dressing-room cosmetics, Phosphor character overlays,

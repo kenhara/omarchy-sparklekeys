@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "kenhara.sparklekeys",
   "name": "Sparklekeys",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "author": "Harris Kenny",
   "license": "MIT",
   "description": "Letter Hunt for a first keyboard. Type, earn trophies.",
@@ -99,7 +99,7 @@
         "key": "soundEnabled",
         "type": "boolean",
         "label": "Sound",
-        "description": "Play a short cartoon blip on a correct letter (Kenney CC0, bundled). Off is silence. Misses stay quiet.",
+        "description": "Play Kenney CC0 cartoon blips on a correct letter, word burst, or level-up. Off is silence. Misses stay quiet.",
         "defaultValue": true
       }
     ],

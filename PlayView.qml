@@ -283,8 +283,8 @@ Item {
           text: {
             var n = store ? store.lastAward : 0
             var why = store ? String(store.lastAwardReason || "") : ""
+            if (why === "level") return "+" + n + " ⭐  level!"
             if (why === "daily") return "+" + n + " ⭐  daily goal!"
-            if (why === "streak") return "+" + n + " ⭐  streak!"
             if (why === "word") return "+" + n + " ⭐  word!"
             return "+" + n + " ⭐"
           }

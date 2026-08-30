@@ -4,9 +4,13 @@
 Read: O_RDONLY|O_NOFOLLOW|O_NONBLOCK|O_CLOEXEC, regular file only, cap+1.
 Missing / symlink / FIFO / oversize → exit 1, no body.
 
-Write (--write): mkdir dest dir 0700; exclusive tmp
-  os.open(O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW, 0o600) → write → fsync → os.replace
-Never opens dest for write (symlink dest is replaced, not followed).
+Write (--write): payload on stdin only (never argv). mkdir dest dir 0700;
+exclusive tmp os.open(O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW, 0o600) → write →
+fsync → os.replace. Emits nothing on stdout. Never opens dest for write
+(symlink dest is replaced, not followed).
+
+--file paths must pass is_safe_config_path on both read and write (absolute
+local; no ://, \\ , leading -). Fail closed: exit 1, no body.
 
 --check-path: unit-test path sanitizer (absolute local path only).
 """
@@ -61,7 +65,7 @@ def _close_fd(fd: int) -> None:
 
 
 def read_cache(path: str, cap: int) -> None:
-    if not path or cap < 0:
+    if not is_safe_config_path(path) or cap < 0:
         sys.exit(1)
     flags = with_cloexec(require_flags("O_RDONLY", "O_NOFOLLOW", "O_NONBLOCK"))
     fd = -1
@@ -94,9 +98,7 @@ def read_cache(path: str, cap: int) -> None:
 
 
 def write_exclusive(path: str, data: bytes, cap: int) -> None:
-    if not path or not path.startswith("/") or cap < 0:
-        sys.exit(1)
-    if "://" in path or "\\" in path:
+    if not is_safe_config_path(path) or cap < 0:
         sys.exit(1)
     if not data or len(data) > cap:
         sys.exit(1)
@@ -117,18 +119,15 @@ def write_exclusive(path: str, data: bytes, cap: int) -> None:
     dest_name = os.path.basename(path)
     tmp_path = ""
     fd = -1
-    last_err: Exception | None = None
     for _ in range(16):
         candidate = os.path.join(parent, f".{dest_name}.{secrets.token_hex(8)}.tmp")
         try:
             fd = os.open(candidate, flags, 0o600)
             tmp_path = candidate
             break
-        except FileExistsError as e:
-            last_err = e
+        except FileExistsError:
             continue
-        except OSError as e:
-            last_err = e
+        except OSError:
             continue
     if fd < 0 or not tmp_path:
         sys.exit(1)
@@ -164,8 +163,7 @@ def main() -> None:
     p = argparse.ArgumentParser(description="Bounded trust-path progress read/write")
     p.add_argument("--file", help="progress file path")
     p.add_argument("--cap", type=int, default=65536, help="max bytes")
-    p.add_argument("--write", action="store_true", help="exclusive write mode")
-    p.add_argument("--data", help="write payload (else stdin)")
+    p.add_argument("--write", action="store_true", help="exclusive write mode (payload on stdin)")
     p.add_argument("--check-path", dest="check_path", help="validate absolute local path and exit")
     args = p.parse_args()
 
@@ -174,14 +172,13 @@ def main() -> None:
 
     path = str(args.file or "")
     cap = int(args.cap)
+    if not is_safe_config_path(path):
+        sys.exit(1)
     if args.write:
-        if args.data is not None:
-            payload = str(args.data).encode("utf-8")
-        else:
-            try:
-                payload = sys.stdin.buffer.read(cap + 1)
-            except Exception:
-                sys.exit(1)
+        try:
+            payload = sys.stdin.buffer.read(cap + 1)
+        except Exception:
+            sys.exit(1)
         write_exclusive(path, payload, cap)
         return
     read_cache(path, cap)

@@ -1,11 +1,12 @@
 import QtQuick
 import qs.Commons
 
-// Trophies room: themed 4×5 emoji boards. Hunt is gone.
-// Unlocks are level-gated (4 per level). Tap a tile to inspect it
-// (big emoji + title + blurb). Unlocked inspect also wears it on the
-// bar chip. Color emoji cannot be tinted with Text.color — locked
-// tiles use a stone background + low emoji opacity (no QtQuick.Effects).
+// Trophies room: themed 4×5 emoji boards (eight boards, cap 40). Hunt is gone.
+// Unlocks are level-gated (4 per level). Tap a tile to inspect it in a
+// full-width Trophies subpanel (giant emoji + title + blurb) — not an overlay.
+// Unlocked inspect also wears it on the bar chip. Color emoji cannot be
+// tinted with Text.color — locked tiles use a stone background + low emoji
+// opacity (no QtQuick.Effects).
 Item {
   id: root
 
@@ -16,9 +17,6 @@ Item {
   property color accent: "#ff6bb5"
   property color aura: "#ff9ad5"
   property string fontFamily: "monospace"
-  // Panel hosts this so the inspect card sits over the Flickable viewport
-  // (does not scroll with the board, does not cover the header).
-  property Item overlayHost: null
 
   property var inspectItem: null
   readonly property bool inspectOpen: inspectItem !== null && inspectItem !== undefined
@@ -63,23 +61,6 @@ Item {
     root.inspectItem = null
   }
 
-  // Map a point on the inspect overlay back onto the board grid. Used so
-  // tapping another tile replaces the open card (no extra Close first).
-  function tileAt(srcItem, x, y) {
-    if (!srcItem)
-      return null
-    var kids = tileGrid.children
-    for (var i = 0; i < kids.length; i++) {
-      var ch = kids[i]
-      if (!ch || !ch.item || !String(ch.itemId || "").length)
-        continue
-      var p = ch.mapFromItem(srcItem, x, y)
-      if (p.x >= 0 && p.y >= 0 && p.x < ch.width && p.y < ch.height)
-        return ch
-    }
-    return null
-  }
-
   onOpenedChanged: {
     if (!root.opened)
       root.closeInspect()
@@ -95,180 +76,152 @@ Item {
   Column {
     id: roomCol
     width: root.width
-    spacing: Style.space(12)
+    spacing: 0
 
-    Text {
+    Column {
+      id: boardCol
       width: parent.width
-      text: root.boardTitle
-      textFormat: Text.PlainText
-      color: root.foreground
-      font.family: root.fontFamily
-      font.pixelSize: Style.font.body
-      font.bold: true
-      horizontalAlignment: Text.AlignHCenter
-    }
+      visible: !root.inspectOpen
+      height: visible ? implicitHeight : 0
+      spacing: Style.space(12)
 
-    Item {
-      width: parent.width
-      height: navRow.implicitHeight
-
-      Row {
-        id: navRow
-        anchors.horizontalCenter: parent.horizontalCenter
-        spacing: Style.space(10)
-
-        NavPill {
-          label: "Prev"
-          tappable: root.canPrev
-          onClicked: if (store) store.prevBoard()
-        }
-
-        NavPill {
-          label: root.canNext ? "Next" : (root.nextLevel > 0 ? ("Lv " + root.nextLevel) : "Next")
-          tappable: root.canNext
-          onClicked: if (store) store.nextBoard()
-        }
+      Text {
+        width: parent.width
+        text: root.boardTitle
+        textFormat: Text.PlainText
+        color: root.foreground
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.body
+        font.bold: true
+        horizontalAlignment: Text.AlignHCenter
       }
-    }
 
-    Grid {
-      id: tileGrid
-      width: parent.width
-      columns: 5
-      columnSpacing: Style.space(6)
-      rowSpacing: Style.space(6)
+      Item {
+        width: parent.width
+        height: navRow.implicitHeight
 
-      Repeater {
-        model: root.friends
-        delegate: TrophyTile {
-          required property var modelData
-          item: modelData
-          width: Math.max(
-            Style.space(48),
-            Math.floor((tileGrid.width - tileGrid.columnSpacing * 4) / 5))
-        }
-      }
-    }
+        Row {
+          id: navRow
+          anchors.horizontalCenter: parent.horizontalCenter
+          spacing: Style.space(10)
 
-    BackPill {
-      anchors.horizontalCenter: parent.horizontalCenter
-    }
-  }
+          NavPill {
+            label: "Prev"
+            tappable: root.canPrev
+            onClicked: if (store) store.prevBoard()
+          }
 
-  // In-room inspect: parented onto overlayHost so it covers the visible
-  // board (Flickable viewport), not a new room and not a browser.
-  Item {
-    id: inspectLayer
-    parent: root.overlayHost ? root.overlayHost : root
-    anchors.fill: parent
-    visible: root.inspectOpen
-    enabled: visible
-    z: 40
-
-    Rectangle {
-      id: scrim
-      anchors.fill: parent
-      color: Qt.rgba(0, 0, 0, 0.55)
-      MouseArea {
-        anchors.fill: parent
-        onClicked: function(mouse) {
-          var hit = root.tileAt(scrim, mouse.x, mouse.y)
-          if (hit) {
-            root.openInspect(hit.item)
-            if (store && hit.unlocked)
-              store.selectFriend(hit.itemId)
-          } else {
-            root.closeInspect()
+          NavPill {
+            label: root.canNext ? "Next" : (root.nextLevel > 0 ? ("Lv " + root.nextLevel) : "Next")
+            tappable: root.canNext
+            onClicked: if (store) store.nextBoard()
           }
         }
       }
-    }
 
-    Rectangle {
-      id: inspectCard
-      anchors.centerIn: parent
-      width: Math.max(
-        Style.space(200),
-        Math.min(parent.width - Style.space(28), Style.space(280)))
-      implicitHeight: cardCol.implicitHeight + Style.space(28)
-      height: implicitHeight
-      radius: Style.space(16)
-      color: Qt.rgba(0.12, 0.12, 0.14, 0.97)
-      border.width: 1
-      border.color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.5)
+      Grid {
+        id: tileGrid
+        width: parent.width
+        columns: 5
+        columnSpacing: Style.space(6)
+        rowSpacing: Style.space(6)
 
-      MouseArea {
-        anchors.fill: parent
-        // Eat clicks so they do not close via the scrim.
+        Repeater {
+          model: root.friends
+          delegate: TrophyTile {
+            required property var modelData
+            item: modelData
+            width: Math.max(
+              Style.space(48),
+              Math.floor((tileGrid.width - tileGrid.columnSpacing * 4) / 5))
+          }
+        }
       }
 
-      Column {
-        id: cardCol
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.margins: Style.space(14)
-        spacing: Style.space(8)
+      BackPill {
+        anchors.horizontalCenter: parent.horizontalCenter
+      }
+    }
+
+    Column {
+      id: inspectCol
+      width: parent.width
+      visible: root.inspectOpen
+      height: visible ? implicitHeight : 0
+      spacing: Style.space(12)
+
+      Item {
+        width: parent.width
+        height: inspectEmoji.implicitHeight
 
         Text {
+          id: inspectEmoji
           width: parent.width
           text: root.inspectItem && root.inspectItem.emoji
             ? String(root.inspectItem.emoji)
             : ""
           textFormat: Text.PlainText
-          font.pixelSize: Style.font.body * 7
+          font.pixelSize: Math.max(
+            Style.font.body * 16,
+            Math.floor(width * 0.55))
           opacity: root.inspectUnlocked ? 1 : 0.22
           horizontalAlignment: Text.AlignHCenter
         }
 
-        Text {
-          width: parent.width
-          text: root.inspectItem && root.inspectItem.label
-            ? String(root.inspectItem.label)
-            : ""
-          textFormat: Text.PlainText
-          color: root.foreground
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.body
-          font.bold: true
-          wrapMode: Text.WordWrap
-          horizontalAlignment: Text.AlignHCenter
+        MouseArea {
+          anchors.fill: parent
+          cursorShape: Qt.PointingHandCursor
+          onClicked: root.closeInspect()
         }
+      }
 
-        Text {
-          width: parent.width
-          visible: !!(root.inspectItem && root.inspectItem.blurb
-            && String(root.inspectItem.blurb).length)
-          height: visible ? implicitHeight : 0
-          text: root.inspectItem && root.inspectItem.blurb
-            ? String(root.inspectItem.blurb)
-            : ""
-          textFormat: Text.PlainText
-          color: root.foreground
-          opacity: 0.85
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.bodySmall
-          wrapMode: Text.WordWrap
-          horizontalAlignment: Text.AlignHCenter
-        }
+      Text {
+        width: parent.width
+        text: root.inspectItem && root.inspectItem.label
+          ? String(root.inspectItem.label)
+          : ""
+        textFormat: Text.PlainText
+        color: root.foreground
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.body
+        font.bold: true
+        wrapMode: Text.WordWrap
+        horizontalAlignment: Text.AlignHCenter
+      }
 
-        Text {
-          width: parent.width
-          visible: !root.inspectUnlocked && root.inspectItem
-          height: visible ? implicitHeight : 0
-          text: "Lv " + (root.inspectItem
-            ? Math.max(1, Math.floor(Number(root.inspectItem.level) || 1))
-            : 1)
-          textFormat: Text.PlainText
-          color: root.dimForeground
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.caption
-          horizontalAlignment: Text.AlignHCenter
-        }
+      Text {
+        width: parent.width
+        visible: !!(root.inspectItem && root.inspectItem.blurb
+          && String(root.inspectItem.blurb).length)
+        height: visible ? implicitHeight : 0
+        text: root.inspectItem && root.inspectItem.blurb
+          ? String(root.inspectItem.blurb)
+          : ""
+        textFormat: Text.PlainText
+        color: root.foreground
+        opacity: 0.85
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.bodySmall
+        wrapMode: Text.WordWrap
+        horizontalAlignment: Text.AlignHCenter
+      }
 
-        ClosePill {
-          anchors.horizontalCenter: parent.horizontalCenter
-        }
+      Text {
+        width: parent.width
+        visible: !root.inspectUnlocked && root.inspectItem
+        height: visible ? implicitHeight : 0
+        text: "Lv " + (root.inspectItem
+          ? Math.max(1, Math.floor(Number(root.inspectItem.level) || 1))
+          : 1)
+        textFormat: Text.PlainText
+        color: root.dimForeground
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.caption
+        horizontalAlignment: Text.AlignHCenter
+      }
+
+      ClosePill {
+        anchors.horizontalCenter: parent.horizontalCenter
       }
     }
   }
@@ -349,8 +302,8 @@ Item {
   component ClosePill: Rectangle {
     id: closePill
     readonly property bool hovered: closeMa.containsMouse
-    implicitWidth: closeLabel.implicitWidth + Style.space(20)
-    implicitHeight: Style.space(28)
+    implicitWidth: closeLabel.implicitWidth + Style.space(28)
+    implicitHeight: Style.space(40)
     width: implicitWidth
     height: implicitHeight
     radius: height / 2
@@ -363,7 +316,7 @@ Item {
     Text {
       id: closeLabel
       anchors.centerIn: parent
-      text: "Close"
+      text: "Back"
       textFormat: Text.PlainText
       color: root.foreground
       font.family: root.fontFamily

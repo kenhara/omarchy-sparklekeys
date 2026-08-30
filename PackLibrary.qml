@@ -125,7 +125,7 @@ QtObject {
     return out
   }
 
-  // Four themed boards of 20 (4 row × 5 col). Four trophies unlock per level (cap 20).
+  // Eight themed boards of 20 (4 row × 5 col). Four trophies unlock per level (cap 40).
   // Emoji are wide-adoption (Unicode 6.0; unicorn + sun-with-face are 8.0). No new-era glyphs.
   readonly property var boards: [
     {
@@ -235,10 +235,119 @@ QtObject {
         { "id": "ram", "label": "Ram", "emoji": "🐏", "level": 20, "blurb": "A sheep with big horns." },
         { "id": "whale2", "label": "Whale", "emoji": "🐋", "level": 20, "blurb": "A big whale in the deep sea." }
       ]
+    },
+    {
+      "id": "ocean",
+      "title": "Ocean",
+      "unlockLevel": 21,
+      "friends": [
+        { "id": "sea-fish", "label": "Fish", "emoji": "🐟", "level": 21, "blurb": "A small fish that swims." },
+        { "id": "blowfish", "label": "Blowfish", "emoji": "🐡", "level": 21, "blurb": "A round fish with spikes." },
+        { "id": "shell", "label": "Shell", "emoji": "🐚", "level": 21, "blurb": "A pretty shell from the beach." },
+        { "id": "sailboat", "label": "Sailboat", "emoji": "⛵", "level": 21, "blurb": "A boat with a white sail." },
+        { "id": "ship", "label": "Ship", "emoji": "🚢", "level": 22, "blurb": "A big boat that goes far." },
+        { "id": "crab", "label": "Crab", "emoji": "🦀", "level": 22, "blurb": "A crab that walks sideways." },
+        { "id": "speedboat", "label": "Speedboat", "emoji": "🚤", "level": 22, "blurb": "A fast boat that skims the water." },
+        { "id": "sunrise", "label": "Sunrise", "emoji": "🌅", "level": 22, "blurb": "The sun coming up over the water." },
+        { "id": "dawn", "label": "Dawn", "emoji": "🌄", "level": 23, "blurb": "The sun coming up over the hills." },
+        { "id": "volcano", "label": "Volcano", "emoji": "🌋", "level": 23, "blurb": "A mountain that shoots out fire." },
+        { "id": "fuji", "label": "Mountain", "emoji": "🗻", "level": 23, "blurb": "A tall snowy mountain." },
+        { "id": "fountain", "label": "Fountain", "emoji": "⛲", "level": 23, "blurb": "Water that shoots up in a park." },
+        { "id": "dusk", "label": "Dusk", "emoji": "🌆", "level": 24, "blurb": "A city at the end of the day." },
+        { "id": "bridge", "label": "Bridge", "emoji": "🌉", "level": 24, "blurb": "A bridge with lights at night." },
+        { "id": "anchor", "label": "Anchor", "emoji": "⚓", "level": 24, "blurb": "A heavy hook that holds a boat." },
+        { "id": "fishing", "label": "Fishing", "emoji": "🎣", "level": 24, "blurb": "A pole for catching fish." },
+        { "id": "droplet", "label": "Drop", "emoji": "💧", "level": 25, "blurb": "A drop of water." },
+        { "id": "sunset", "label": "Sunset", "emoji": "🌇", "level": 25, "blurb": "The sun going down over the city." },
+        { "id": "foggy", "label": "Fog", "emoji": "🌁", "level": 25, "blurb": "A city in the mist." },
+        { "id": "hot-springs", "label": "Springs", "emoji": "♨️", "level": 25, "blurb": "Hot water bubbling from the ground." }
+      ]
+    },
+    {
+      "id": "treats",
+      "title": "Treats",
+      "unlockLevel": 26,
+      "friends": [
+        { "id": "apple", "label": "Apple", "emoji": "🍎", "level": 26, "blurb": "A red apple to crunch." },
+        { "id": "green-apple", "label": "Apple", "emoji": "🍏", "level": 26, "blurb": "A green apple. It is sour." },
+        { "id": "orange", "label": "Orange", "emoji": "🍊", "level": 26, "blurb": "A round orange fruit." },
+        { "id": "lemon", "label": "Lemon", "emoji": "🍋", "level": 26, "blurb": "A sour yellow fruit." },
+        { "id": "banana", "label": "Banana", "emoji": "🍌", "level": 27, "blurb": "A yellow fruit you peel." },
+        { "id": "watermelon", "label": "Melon", "emoji": "🍉", "level": 27, "blurb": "A big fruit with a green rind." },
+        { "id": "grapes", "label": "Grapes", "emoji": "🍇", "level": 27, "blurb": "Little purple fruits in a bunch." },
+        { "id": "strawberry", "label": "Berry", "emoji": "🍓", "level": 27, "blurb": "A small red fruit with seeds." },
+        { "id": "cherries", "label": "Cherries", "emoji": "🍒", "level": 28, "blurb": "Two small red fruits on a stem." },
+        { "id": "peach", "label": "Peach", "emoji": "🍑", "level": 28, "blurb": "A fuzzy fruit that is sweet." },
+        { "id": "pineapple", "label": "Pineapple", "emoji": "🍍", "level": 28, "blurb": "A fruit with a spiky top." },
+        { "id": "burger", "label": "Burger", "emoji": "🍔", "level": 28, "blurb": "A sandwich with a patty." },
+        { "id": "fries", "label": "Fries", "emoji": "🍟", "level": 29, "blurb": "Crispy sticks of potato." },
+        { "id": "pizza", "label": "Pizza", "emoji": "🍕", "level": 29, "blurb": "A slice with cheese on top." },
+        { "id": "ice-cream", "label": "Ice cream", "emoji": "🍦", "level": 29, "blurb": "A cold sweet treat in a cone." },
+        { "id": "shaved-ice", "label": "Ice", "emoji": "🍧", "level": 29, "blurb": "A cup of fluffy ice." },
+        { "id": "cookie", "label": "Cookie", "emoji": "🍪", "level": 30, "blurb": "A sweet cookie with chips." },
+        { "id": "chocolate", "label": "Chocolate", "emoji": "🍫", "level": 30, "blurb": "A bar of chocolate." },
+        { "id": "candy", "label": "Candy", "emoji": "🍬", "level": 30, "blurb": "A wrapped piece of candy." },
+        { "id": "cake", "label": "Cake", "emoji": "🍰", "level": 30, "blurb": "A slice of cake with cream." }
+      ]
+    },
+    {
+      "id": "wheels",
+      "title": "Wheels",
+      "unlockLevel": 31,
+      "friends": [
+        { "id": "car", "label": "Car", "emoji": "🚗", "level": 31, "blurb": "A red car for a ride." },
+        { "id": "taxi", "label": "Taxi", "emoji": "🚕", "level": 31, "blurb": "A yellow car that takes you places." },
+        { "id": "suv", "label": "Car", "emoji": "🚙", "level": 31, "blurb": "A blue car for a long trip." },
+        { "id": "bus", "label": "Bus", "emoji": "🚌", "level": 31, "blurb": "A big bus that carries many kids." },
+        { "id": "trolley", "label": "Trolley", "emoji": "🚎", "level": 32, "blurb": "A bus that runs on wires." },
+        { "id": "police-car", "label": "Car", "emoji": "🚓", "level": 32, "blurb": "A car with a light on top." },
+        { "id": "ambulance", "label": "Ambulance", "emoji": "🚑", "level": 32, "blurb": "A van that helps when you are hurt." },
+        { "id": "fire-engine", "label": "Truck", "emoji": "🚒", "level": 32, "blurb": "A truck that puts out fires." },
+        { "id": "minibus", "label": "Van", "emoji": "🚐", "level": 33, "blurb": "A small bus." },
+        { "id": "truck", "label": "Truck", "emoji": "🚚", "level": 33, "blurb": "A truck that carries boxes." },
+        { "id": "tractor", "label": "Tractor", "emoji": "🚜", "level": 33, "blurb": "A farm truck that pulls things." },
+        { "id": "bike", "label": "Bike", "emoji": "🚲", "level": 33, "blurb": "A bike you pedal." },
+        { "id": "helicopter", "label": "Helicopter", "emoji": "🚁", "level": 34, "blurb": "A flying machine with spinning blades." },
+        { "id": "airplane", "label": "Plane", "emoji": "✈️", "level": 34, "blurb": "A plane that flies in the sky." },
+        { "id": "rocket", "label": "Rocket", "emoji": "🚀", "level": 34, "blurb": "A rocket that flies to space." },
+        { "id": "locomotive", "label": "Train", "emoji": "🚂", "level": 34, "blurb": "A train engine that puffs steam." },
+        { "id": "railway-car", "label": "Train", "emoji": "🚃", "level": 35, "blurb": "A train car on the tracks." },
+        { "id": "high-speed", "label": "Train", "emoji": "🚄", "level": 35, "blurb": "A fast train." },
+        { "id": "bullet-train", "label": "Train", "emoji": "🚅", "level": 35, "blurb": "A very fast train with a pointy nose." },
+        { "id": "metro", "label": "Metro", "emoji": "🚇", "level": 35, "blurb": "A train that goes under the city." }
+      ]
+    },
+    {
+      "id": "party",
+      "title": "Party",
+      "unlockLevel": 36,
+      "friends": [
+        { "id": "soccer", "label": "Soccer", "emoji": "⚽", "level": 36, "blurb": "A ball you kick." },
+        { "id": "baseball", "label": "Baseball", "emoji": "⚾", "level": 36, "blurb": "A ball you hit with a bat." },
+        { "id": "basketball", "label": "Basketball", "emoji": "🏀", "level": 36, "blurb": "A ball you bounce and shoot." },
+        { "id": "football", "label": "Football", "emoji": "🏈", "level": 36, "blurb": "A ball that is pointy at both ends." },
+        { "id": "tennis", "label": "Tennis", "emoji": "🎾", "level": 37, "blurb": "A ball you hit with a racket." },
+        { "id": "eight-ball", "label": "Eight ball", "emoji": "🎱", "level": 37, "blurb": "A black ball with the number eight." },
+        { "id": "bowling", "label": "Bowling", "emoji": "🎳", "level": 37, "blurb": "A ball you roll at pins." },
+        { "id": "golf", "label": "Golf", "emoji": "⛳", "level": 37, "blurb": "A flag on a little green." },
+        { "id": "dart", "label": "Target", "emoji": "🎯", "level": 38, "blurb": "A round target with rings." },
+        { "id": "dice", "label": "Dice", "emoji": "🎲", "level": 38, "blurb": "Cubes with dots for games." },
+        { "id": "gamepad", "label": "Game", "emoji": "🎮", "level": 38, "blurb": "A controller for a game." },
+        { "id": "guitar", "label": "Guitar", "emoji": "🎸", "level": 38, "blurb": "A guitar you strum." },
+        { "id": "piano", "label": "Piano", "emoji": "🎹", "level": 39, "blurb": "Keys you press to make music." },
+        { "id": "trumpet", "label": "Trumpet", "emoji": "🎺", "level": 39, "blurb": "A shiny horn you blow." },
+        { "id": "violin", "label": "Violin", "emoji": "🎻", "level": 39, "blurb": "A small instrument you play with a bow." },
+        { "id": "art", "label": "Paint", "emoji": "🎨", "level": 39, "blurb": "A palette of paint colors." },
+        { "id": "circus", "label": "Circus", "emoji": "🎪", "level": 40, "blurb": "A big tent for a show." },
+        { "id": "ferris", "label": "Wheel", "emoji": "🎡", "level": 40, "blurb": "A giant wheel you ride." },
+        { "id": "carousel", "label": "Carousel", "emoji": "🎠", "level": 40, "blurb": "A ride with horses that go around." },
+        { "id": "balloon", "label": "Balloon", "emoji": "🎈", "level": 40, "blurb": "A balloon that floats." }
+      ]
     }
   ]
 
   readonly property string defaultFriendId: "sparkles"
+  readonly property int maxTrophyLevel: 40
 
   function ids() {
     return ["unicorn", "dragon"]
@@ -318,14 +427,23 @@ QtObject {
   }
 
   function boardForLevel(level) {
-    var lv = Math.max(1, Math.min(20, Math.floor(Number(level) || 1)))
+    var cap = library.maxTrophyLevel
+    var lv = Math.max(1, Math.min(cap, Math.floor(Number(level) || 1)))
     if (lv <= 5)
       return library.board("friends")
     if (lv <= 10)
       return library.board("garden")
     if (lv <= 15)
       return library.board("sky")
-    return library.board("wild")
+    if (lv <= 20)
+      return library.board("wild")
+    if (lv <= 25)
+      return library.board("ocean")
+    if (lv <= 30)
+      return library.board("treats")
+    if (lv <= 35)
+      return library.board("wheels")
+    return library.board("party")
   }
 
   function avatarIds() {

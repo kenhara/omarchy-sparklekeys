@@ -5,9 +5,28 @@ Letter Hunt for a first keyboard. Type, earn trophies.
 **ID:** `kenhara.sparklekeys`  
 **Author:** Harris Kenny  
 **License:** MIT  
-**Version:** 0.8.0
+**Version:** 0.9.0
 
 **Repo:** https://github.com/kenhara/omarchy-sparklekeys
+
+### 0.9.0
+
+- Trophy inspect is a full Trophies panel (giant emoji, title, blurb), not
+  an overlay card. Back (or tap the emoji) returns to the same board.
+  Play | Trophies header stays; inspect is not a third room tab.
+- Completing a level plays `sounds/level.wav` (Kenney confirmation_003)
+  instead of the letter-hit coin. Miss stays silent. Sound toggle still
+  gates it.
+- Stars per level 20 (was 15). Letter still +1 (overlay stays). No streak
+  extra. Word complete +5 extra. Daily +5 stays. Header level remains
+  uncapped. `schemaVersion` 4 rescales old `totalEarned` / `stars` by
+  `floor(n * 20 / 15)` so displayed level does not drop.
+- Four more 4×5 boards: Ocean (Lv 21–25), Treats (26–30), Wheels (31–35),
+  Party (36–40). Trophy cap 40. Existing Friends / Garden / Sky / Wild
+  unchanged.
+- Progress write is helper stdin (not argv `--data`). `--file` paths run
+  `is_safe_config_path` on read and write. Isolated `/tmp` prove in
+  `scripts/prove-progress.sh`.
 
 ### 0.8.0
 
@@ -177,20 +196,21 @@ qmllint -I "$OMARCHY_PATH/shell" *.qml
 4. Right key → stars + celebration + next letter. Wrong key → wiggle + brighter
    glow. No timers, no game over, no score loss.
 5. Tap **Trophies** in the header to open the board for her current level.
-   Tap a trophy to inspect it (big emoji, title, blurb). Tapping another
-   tile replaces the open card. Unlocked inspect also wears it on the bar
-   chip. Locked tiles are gray with `Lv N` and still show their name and
-   blurb. **Next** pages to the next themed board once it is unlocked;
-   otherwise it stays dim (`Lv N`). **Back to hunt** returns to Play.
+   Tap a trophy to inspect it: the board hides and a full Trophies panel
+   shows a giant emoji, title, and blurb. Unlocked inspect also wears it
+   on the bar chip. Locked tiles stay gray with `Lv N` and still show their
+   name and blurb (they do not wear). **Back** (or tap the emoji) returns to the same board.
+   **Next** pages to the next themed board once it is unlocked; otherwise
+   it stays dim (`Lv N`). **Back to hunt** returns to Play.
 6. Escape or click-away closes. Progress survives a shell restart.
 
 Letter order starts with the letters of the child's name (when set), then a
 curated easy cycle.
 
-Level is `1 + floor(totalEarned / 15)` (header uncapped). Four trophies
-unlock per level through 20; boards stay complete after that. Trophies are
-not bought with stars. Words mode uses the active pack's tier for her
-current level.
+Level is `1 + floor(totalEarned / 20)` (header uncapped). Four trophies
+unlock per level through 40; boards stay complete after that (Play board).
+Trophies are not bought with stars. Words mode uses the active pack's tier
+for her current level.
 
 ### Controls
 
@@ -203,9 +223,9 @@ current level.
 | Back to hunt (Trophies) | Return to the hunt |
 | Prev / Next (Trophies) | Page boards (Next only when unlocked) |
 | Trophy tile | Inspect (wear if unlocked) |
-| Inspect Close / scrim | Close the inspect card |
+| Inspect Back / tap emoji | Return to the same trophy board |
 | Letters / Words switch (under the letter, Play only) | Toggle start mode (mirrors `startMode`) |
-| Sound pill (by stars) | Toggle cartoon hit / sparkle |
+| Sound pill (by stars) | Toggle cartoon hit / sparkle / level-up |
 | Name: Enter | Save name + avatar (first-open flow) |
 | Name: Backspace | Delete a letter |
 
@@ -249,12 +269,13 @@ rm -rf ~/.local/share/sparklekeys
 
 ## Sound
 
-Two tiny Kenney **Interface Sounds** clips (CC0) live in `sounds/`:
+Three tiny Kenney **Interface Sounds** clips (CC0) live in `sounds/`:
 
 | File | When | Source clip |
 |------|------|-------------|
 | `hit.wav` | Correct letter | `confirmation_001.ogg` |
 | `sparkle.wav` | Word complete, daily goal, special burst | `confirmation_002.ogg` |
+| `level.wav` | Level-up (instead of the letter-hit coin) | `confirmation_003.ogg` |
 
 Played with QtMultimedia `SoundEffect` via `Qt.resolvedUrl("sounds/hit.wav")`
 (plugin-local only). Volume is modest (~0.5). A miss is silence — no-fail.
@@ -266,12 +287,17 @@ No freedesktop theme chimes. Credit: [Kenney.nl](https://kenney.nl/assets/interf
 
 - **Progress:** `${XDG_DATA_HOME:-$HOME/.local/share}/sparklekeys/progress.json`
   Read/write via `scripts/progress.py` (HC-05: `O_NOFOLLOW` regular file,
-  cap 64 KiB; exclusive tmp 0600 + fsync + `os.replace`). Helper creates
-  the data dir `0700`. Missing or corrupt file seeds a working default
-  game. `schemaVersion` 3 stores `selectedFriend` (unknown ids fall back to
-  sparkles). Trophies snaps to the current-level board on enter. Old stars
-  / name / stats still hydrate. Old closet unlock keys are ignored for play
-  but not wiped.
+  cap 64 KiB; exclusive tmp 0600 + fsync + `os.replace`). Write payload is
+  stdin only (not argv `--data`). `--file` must be an absolute local path
+  (`is_safe_config_path`) on both read and write. Helper creates the data
+  dir `0700`. Missing or corrupt file seeds a working default game.
+  `schemaVersion` 4 stores `selectedFriend` (unknown ids fall back to
+  sparkles). Files older than 4 rescale `totalEarned` and `stars` by
+  `floor(n * 20 / 15)` so displayed level matches the old 15-star steps.
+  Hydrate strips `<>` / markdown images / ASCII controls on persisted
+  strings before they hit Text. Trophies snaps to the current-level board
+  on enter. Old stars / name / stats still hydrate. Old closet unlock keys
+  are ignored for play but not wiped.
 - **Why not `~/.cache`:** this is earned progress. A cache cleaner must not
   wipe her stars. Intentional divergence from sibling plugins.
 - **No network.** Local Python helper only (progress I/O). No clipboard or
@@ -280,19 +306,20 @@ No freedesktop theme chimes. Credit: [Kenney.nl](https://kenney.nl/assets/interf
 ## Layout
 
 ```
-manifest.json       # kenhara.sparklekeys @ 0.8.0
+manifest.json       # kenhara.sparklekeys @ 0.9.0
 qmldir
 BarWidget.qml       # bar chip (selected emoji) + Loader → Panel; owns SparkleStore
 Panel.qml           # KeyboardPanel + two-line header (Play|Trophies, greeting, Sound)
 SparkleStore.qml    # state, economy, Process → scripts/progress.py, SoundEffect
-PackLibrary.qml     # unicorn + dragon 4-tier words; identity ✨; 12-avatar catalog; Friends / Garden / Sky / Wild 4×5 boards
+PackLibrary.qml     # unicorn + dragon 4-tier words; identity ✨; 12-avatar catalog; eight 4×5 boards (cap 40)
 PlayView.qml
-ClosetView.qml      # Trophies room (4×5 boards + inspect overlay)
+ClosetView.qml      # Trophies room (4×5 boards + inspect subpanel)
 KeyboardHint.qml
 Celebration.qml
 StarCounter.qml
-scripts/progress.py # HC-05 read + exclusive write for progress.json
-sounds/             # Kenney CC0 hit.wav + sparkle.wav
+scripts/progress.py # HC-05 read + exclusive stdin write for progress.json
+scripts/prove-progress.sh  # isolated /tmp prove (never real progress)
+sounds/             # Kenney CC0 hit.wav + sparkle.wav + level.wav
 DESIGN.md
 REPO.md
 LICENSE
@@ -310,7 +337,7 @@ Panel / Bar / Trophies.
 - Child name is letters-only, length-capped, shown as `Text.PlainText`.
 - MIT at repo root. Phosphor regular glyphs bundled locally (MIT) for
   celebration bursts only.
-- Two Kenney Interface Sounds clips (CC0) under `sounds/`. No remote audio.
+- Three Kenney Interface Sounds clips (CC0) under `sounds/`. No remote audio.
 - No remote Image / SVG. No CI / GitHub Actions.
 
 ## License
