@@ -1,4 +1,6 @@
 # Caches / tooling
+__pycache__/
+*.pyc
 .cache/
 *.cache
 .pytest_cache/

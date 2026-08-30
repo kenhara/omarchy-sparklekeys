@@ -4,7 +4,8 @@ import Quickshell.Io
 import QtMultimedia
 
 // Sparklekeys state + economy + persistence.
-// Item-wrapped (family contract). No Python, no network.
+// Item-wrapped (family contract). No network.
+// Progress I/O is scripts/progress.py (HC-05 read + exclusive write), not FileView.
 // Progress lives in ~/.local/share (earned stars — never a cache wipe).
 Item {
   id: store
@@ -85,6 +86,25 @@ Item {
   }
   readonly property string progressDir: store.dataHome + "/sparklekeys"
   readonly property string progressPath: store.progressDir + "/progress.json"
+  readonly property string pluginDir: {
+    var raw = String(Qt.resolvedUrl("."))
+      .replace(/^file:\/\//, "")
+      .replace(/\/$/, "")
+    try {
+      return decodeURIComponent(raw)
+    } catch (e) {
+      return raw
+    }
+  }
+  readonly property string helperPath: store.pluginDir + "/scripts/progress.py"
+  readonly property int maxProgressBytes: 65536
+  readonly property int maxHelperOutput: 69632
+  readonly property var helperEnv: ({
+    "PATH": "/usr/bin:/bin",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  })
+  property string progressBuf: ""
+  property bool progressOverflow: false
 
   readonly property string effectivePack: store.normalizePack(store.characterPack)
 
@@ -610,6 +630,36 @@ Item {
     return t
   }
 
+  function capField(s, n) {
+    var t = String(s || "")
+    var max = Math.max(0, Math.floor(Number(n) || 0))
+    if (t.length > max)
+      t = t.substring(0, max)
+    return t
+  }
+
+  function capInt(n) {
+    var v = Math.floor(Number(n) || 0)
+    if (!isFinite(v) || v < 0)
+      return 0
+    if (v > 1e12)
+      return 1e12
+    return v
+  }
+
+  function capObject(obj, maxBytes) {
+    if (!obj || typeof obj !== "object")
+      return ({})
+    try {
+      var s = JSON.stringify(obj)
+      if (!s || s.length > maxBytes)
+        return ({})
+    } catch (e) {
+      return ({})
+    }
+    return obj
+  }
+
   function commitName() {
     var next = store.sanitizeName(store.nameDraft)
     store.childName = next
@@ -632,6 +682,8 @@ Item {
   }
 
   function seedDefaults() {
+    if (store.hydrated)
+      return
     store.childName = ""
     store.stars = 0
     store.totalEarned = 0
@@ -693,22 +745,22 @@ Item {
         return
       }
       store.childName = store.sanitizeName(obj.childName || "")
-      store.stars = Math.max(0, Math.floor(Number(obj.stars) || 0))
-      store.totalEarned = Math.max(0, Math.floor(Number(obj.totalEarned) || 0))
-      store.unlockedByPack = (obj.unlocked && typeof obj.unlocked === "object") ? obj.unlocked : ({})
-      store.equippedByPack = (obj.equipped && typeof obj.equipped === "object") ? obj.equipped : ({})
+      store.stars = store.capInt(obj.stars)
+      store.totalEarned = store.capInt(obj.totalEarned)
+      store.unlockedByPack = store.capObject(obj.unlocked, 8192)
+      store.equippedByPack = store.capObject(obj.equipped, 8192)
       var stats = (obj.stats && typeof obj.stats === "object") ? obj.stats : ({})
-      store.lettersTyped = Math.max(0, Math.floor(Number(stats.lettersTyped) || 0))
-      store.bestStreak = Math.max(0, Math.floor(Number(stats.bestStreak) || 0))
-      store.lessonsDone = Math.max(0, Math.floor(Number(stats.lessonsDone) || 0))
-      store.lastDay = String(stats.lastDay || "")
-      store.todayCount = Math.max(0, Math.floor(Number(stats.todayCount) || 0))
+      store.lettersTyped = store.capInt(stats.lettersTyped)
+      store.bestStreak = store.capInt(stats.bestStreak)
+      store.lessonsDone = store.capInt(stats.lessonsDone)
+      store.lastDay = store.capField(stats.lastDay || "", 16)
+      store.todayCount = store.capInt(stats.todayCount)
       store.dailyGoalHit = !!stats.dailyGoalHit
-      var friendId = store.normalizeFriend(obj.selectedFriend || packLib.defaultFriendId)
+      var friendId = store.normalizeFriend(store.capField(obj.selectedFriend || packLib.defaultFriendId, 32))
       if (!store.canWearFriend(friendId))
         friendId = packLib.defaultFriendId
       store.selectedFriend = friendId
-      var boardId = store.normalizeBoard(obj.currentBoardId || "friends")
+      var boardId = store.normalizeBoard(store.capField(obj.currentBoardId || "friends", 32))
       if (!store.isBoardUnlocked(boardId))
         boardId = "friends"
       store.currentBoardId = boardId
@@ -727,22 +779,61 @@ Item {
     }
   }
 
-  function ensureProgressDir() {
-    if (!store.progressDir || !store.progressDir.length)
+  function startProgressRead() {
+    if (store.hydrated)
       return
-    mkdirProc.running = false
-    mkdirProc.running = true
+    if (!store.progressPath || !store.progressPath.length || !store.helperPath.length) {
+      store.seedDefaults()
+      return
+    }
+    if (progressReadProc.running)
+      return
+    store.progressBuf = ""
+    store.progressOverflow = false
+    progressReadProc.running = true
+  }
+
+  function onProgressReadFinished(exitCode) {
+    var over = store.progressOverflow
+    var txt = store.progressBuf
+    store.progressBuf = ""
+    store.progressOverflow = false
+    if (over) {
+      console.warn("kenhara.sparklekeys: progress helper overflow — seeding defaults")
+      store.seedDefaults()
+      return
+    }
+    if (exitCode !== 0) {
+      store.seedDefaults()
+      return
+    }
+    store.hydrate(txt)
   }
 
   function flushSave() {
     saveDebounce.stop()
-    if (!store.progressPath || !store.progressPath.length)
+    if (!store.hydrated)
       return
-    store.ensureProgressDir()
+    if (!store.progressPath || !store.progressPath.length || !store.helperPath.length)
+      return
+    if (progressWriteProc.running)
+      return
     try {
       var body = JSON.stringify(store.toProgress(), null, 2) + "\n"
-      progressFile.setText(body)
+      if (body.length > store.maxProgressBytes) {
+        console.warn("kenhara.sparklekeys: progress too large to save")
+        return
+      }
       store._dirty = false
+      progressWriteProc.command = [
+        "python3", "-B", store.helperPath,
+        "--write",
+        "--file", store.progressPath,
+        "--cap", String(store.maxProgressBytes),
+        "--data", body
+      ]
+      progressWriteProc.environment = store.helperEnv
+      progressWriteProc.running = true
     } catch (e) {
       console.warn("kenhara.sparklekeys: save failed")
     }
@@ -786,12 +877,42 @@ Item {
       store.ensureTarget()
   }
 
-  Component.onCompleted: store.ensureProgressDir()
+  Component.onCompleted: store.startProgressRead()
 
   Process {
-    id: mkdirProc
-    command: ["mkdir", "-p", "-m", "0700", store.progressDir]
+    id: progressReadProc
     running: false
+    command: ["python3", "-B", store.helperPath, "--file", store.progressPath, "--cap", String(store.maxProgressBytes)]
+    environment: store.helperEnv
+    stdout: SplitParser {
+      splitMarker: ""
+      onRead: function(chunk) {
+        if (store.progressOverflow)
+          return
+        if (store.progressBuf.length + String(chunk || "").length > store.maxHelperOutput) {
+          store.progressOverflow = true
+          store.progressBuf = ""
+          progressReadProc.running = false
+          return
+        }
+        store.progressBuf += chunk
+      }
+    }
+    onExited: function(exitCode, exitStatus) {
+      store.onProgressReadFinished(exitCode)
+    }
+  }
+
+  Process {
+    id: progressWriteProc
+    running: false
+    environment: store.helperEnv
+    onExited: function(exitCode, exitStatus) {
+      if (exitCode !== 0)
+        console.warn("kenhara.sparklekeys: progress write failed")
+      if (store._dirty)
+        saveDebounce.restart()
+    }
   }
 
   Timer {
@@ -867,13 +988,4 @@ Item {
     repeat: false
   }
 
-  FileView {
-    id: progressFile
-    path: store.progressPath
-    atomicWrites: true
-    watchChanges: false
-    printErrors: false
-    onLoaded: store.hydrate(text())
-    onLoadFailed: store.seedDefaults()
-  }
 }

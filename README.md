@@ -1,20 +1,21 @@
 # Sparklekeys
 
-Letter Hunt for a first keyboard. Play is hunt-only (the letter and the
-keyboard). Trophies is themed 4×5 unlock boards; tap a trophy to inspect it
-(big emoji + title + blurb). The bar chip is the selected emoji — who she is
-during a lesson (first-open avatar, or ✨ on Skip). The product mark is ✨.
-
-The world is a **pack** — unicorn ships as the default practice-word pack
-(4 word tiers, one every 10 levels); dragon uses the same shape so switching
-words and accents is data, not a rewrite. Local only. No network.
+Letter Hunt for a first keyboard. Type, earn trophies.
 
 **ID:** `kenhara.sparklekeys`  
 **Author:** Harris Kenny  
 **License:** MIT  
-**Version:** 0.7.0
+**Version:** 0.8.0
 
 **Repo:** https://github.com/kenhara/omarchy-sparklekeys
+
+### 0.8.0
+
+- Progress I/O through `scripts/progress.py` (HC-05 read + exclusive write).
+  No FileView. Helper `mkdir` 0700; exclusive tmp, fsync, `os.replace`.
+- Cut leftover chrome: unused CharacterView, Trophies lede, extra
+  `keep practicing` under Next (dim Next already says `Lv N`), Play
+  `Type the word` caption. Locked inspect keeps `Lv N`.
 
 ### 0.7.0
 
@@ -132,8 +133,7 @@ The **git repo root is the plugin** (`manifest.json` at root). On an Omarchy
 machine:
 
 ```sh
-mkdir -p ~/.config/omarchy/plugins ~/.local/share/sparklekeys
-chmod 0700 ~/.local/share/sparklekeys
+mkdir -p ~/.config/omarchy/plugins
 cp -a . ~/.config/omarchy/plugins/kenhara.sparklekeys
 
 omarchy plugin validate ~/.config/omarchy/plugins/kenhara.sparklekeys
@@ -149,8 +149,7 @@ Hot reload applies on save under `~/.config/omarchy/plugins/`.
 On the Omarchy machine (Latitude / UTM / the box that runs `omarchy-shell`):
 
 ```sh
-mkdir -p ~/.config/omarchy/plugins ~/.local/share/sparklekeys
-chmod 0700 ~/.local/share/sparklekeys
+mkdir -p ~/.config/omarchy/plugins
 ln -sfn /path/to/omarchy-sparklekeys ~/.config/omarchy/plugins/kenhara.sparklekeys
 omarchy plugin validate ~/.config/omarchy/plugins/kenhara.sparklekeys
 omarchy-shell shell rescanPlugins
@@ -178,12 +177,11 @@ qmllint -I "$OMARCHY_PATH/shell" *.qml
 4. Right key → stars + celebration + next letter. Wrong key → wiggle + brighter
    glow. No timers, no game over, no score loss.
 5. Tap **Trophies** in the header to open the board for her current level.
-   Trophies light up as you level up. Tap a trophy to inspect it (big emoji,
-   title, blurb). Tapping another tile replaces the open card. Unlocked
-   inspect also wears it on the bar chip. Locked tiles are gray with `Lv N`
-   and still show their name and blurb. **Next**
-   pages to the next themed board once it is unlocked; otherwise it stays
-   dim (`keep practicing` / `Lv 6`). **Back to hunt** returns to Play.
+   Tap a trophy to inspect it (big emoji, title, blurb). Tapping another
+   tile replaces the open card. Unlocked inspect also wears it on the bar
+   chip. Locked tiles are gray with `Lv N` and still show their name and
+   blurb. **Next** pages to the next themed board once it is unlocked;
+   otherwise it stays dim (`Lv N`). **Back to hunt** returns to Play.
 6. Escape or click-away closes. Progress survives a shell restart.
 
 Letter order starts with the letters of the child's name (when set), then a
@@ -267,30 +265,33 @@ No freedesktop theme chimes. Credit: [Kenney.nl](https://kenney.nl/assets/interf
 ## Data
 
 - **Progress:** `${XDG_DATA_HOME:-$HOME/.local/share}/sparklekeys/progress.json`
-  Written with Quickshell `FileView` (`atomicWrites`). The plugin `mkdir`s the
-  data dir `0700` before the first save. Missing or corrupt file seeds a
-  working default game. `schemaVersion` 3 stores `selectedFriend` (unknown
-  ids fall back to sparkles). Trophies snaps to the current-level board on
-  enter. Old stars / name / stats still hydrate. Old closet unlock keys are
-  ignored for play but not wiped.
+  Read/write via `scripts/progress.py` (HC-05: `O_NOFOLLOW` regular file,
+  cap 64 KiB; exclusive tmp 0600 + fsync + `os.replace`). Helper creates
+  the data dir `0700`. Missing or corrupt file seeds a working default
+  game. `schemaVersion` 3 stores `selectedFriend` (unknown ids fall back to
+  sparkles). Trophies snaps to the current-level board on enter. Old stars
+  / name / stats still hydrate. Old closet unlock keys are ignored for play
+  but not wiped.
 - **Why not `~/.cache`:** this is earned progress. A cache cleaner must not
   wipe her stars. Intentional divergence from sibling plugins.
-- **No network.** No Python. No clipboard or `xdg-open` helpers.
+- **No network.** Local Python helper only (progress I/O). No clipboard or
+  `xdg-open` helpers. No sudo.
 
 ## Layout
 
 ```
-manifest.json       # kenhara.sparklekeys @ 0.7.0
+manifest.json       # kenhara.sparklekeys @ 0.8.0
 qmldir
 BarWidget.qml       # bar chip (selected emoji) + Loader → Panel; owns SparkleStore
 Panel.qml           # KeyboardPanel + two-line header (Play|Trophies, greeting, Sound)
-SparkleStore.qml    # state, economy, FileView progress, SoundEffect
+SparkleStore.qml    # state, economy, Process → scripts/progress.py, SoundEffect
 PackLibrary.qml     # unicorn + dragon 4-tier words; identity ✨; 12-avatar catalog; Friends / Garden / Sky / Wild 4×5 boards
 PlayView.qml
 ClosetView.qml      # Trophies room (4×5 boards + inspect overlay)
 KeyboardHint.qml
 Celebration.qml
 StarCounter.qml
+scripts/progress.py # HC-05 read + exclusive write for progress.json
 sounds/             # Kenney CC0 hit.wav + sparkle.wav
 DESIGN.md
 REPO.md
@@ -298,13 +299,14 @@ LICENSE
 README.md
 ```
 
-`CharacterView.qml` and `PhosphorIcon.qml` may remain on disk unused by Panel /
-Bar / Trophies. Celebration still uses PhosphorIcon for burst glyphs.
+`PhosphorIcon.qml` stays for Celebration burst glyphs. Do not load it from
+Panel / Bar / Trophies.
 
 ## Security baseline
 
 - No API keys. No outbound network.
-- Disk: one progress file under `~/.local/share/sparklekeys/` (dir 0700).
+- Disk: one progress file under `~/.local/share/sparklekeys/` (dir 0700,
+  via `scripts/progress.py`).
 - Child name is letters-only, length-capped, shown as `Text.PlainText`.
 - MIT at repo root. Phosphor regular glyphs bundled locally (MIT) for
   celebration bursts only.

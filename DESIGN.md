@@ -1,6 +1,6 @@
 # Sparklekeys — design notes
 
-**Status:** 0.7.0  
+**Status:** 0.8.0  
 **Id:** `kenhara.sparklekeys`  
 **Peers:** Scriptural, Rocketlauncher, Encyclopedic, Enricherino, Compliantish
 
@@ -30,7 +30,10 @@ trophy is sparkles. 0.7 adds a first-open avatar pick: twelve animals in a
 the pick on the bar chip even if that trophy is still locked. Eagle is
 catalog-only (not a board trophy). Skip leaves ✨ and writes progress so the
 name screen does not return. Existing progress.json users do not see
-askingName again.
+askingName again. 0.8 moves progress I/O off FileView onto
+`scripts/progress.py` (HC-05 read + exclusive write), deletes unused
+CharacterView, and drops leftover chrome (Trophies lede, Next/inspect
+"keep practicing", Play "Type the word").
 
 ## The pack is the world
 
@@ -108,7 +111,7 @@ Tap a tile (locked or unlocked) to open an in-room inspect overlay: dim
 scrim over the board, a card with a huge emoji (~3–4× tile size), **title**,
 and one or two short sentences. Unlocked: full-color emoji, and `selectFriend`
 so it wears on the bar. Locked: gray/faded emoji (same stone+opacity as
-tiles), real title + blurb, plus `Lv N` / keep practicing — do not wear a
+tiles), real title + blurb, plus `Lv N` — do not wear a
 locked trophy. Close by tapping the scrim or a **Close** pill. Escape already
 closes the whole panel via PanelKeyCatcher; do not steal it for inspect.
 One inspect at a time; opening another tile replaces the card. Overlay sits
@@ -120,7 +123,7 @@ Locked tiles: stone-gray background (not accent), emoji at ~0.22 opacity,
 import `QtQuick.Effects` (a failed import would take down the panel).
 Unlocked tiles: full opacity, warmer accent-tinted tile. Next is only
 tappable when the next board is unlocked; otherwise dim it
-(`keep practicing` / `Lv 6`). Prev always works once she has left board 1.
+(`Lv N` on the Next pill). Prev always works once she has left board 1.
 
 Opening Trophies (and leveling up while that room is open) loads the board
 for her current level. Prev/Next still let her browse unlocked boards after
@@ -219,8 +222,27 @@ unused). No `· tap name` subtitle. Greeting example stays Jane.
 
 `${XDG_DATA_HOME:-$HOME/.local/share}/sparklekeys/progress.json`
 
-A one-shot `mkdir -p -m 0700` runs before the first FileView save so a
-missing data dir does not drop stars. FileView I/O itself is unchanged.
+User-writable. Not a cache. Oracle: **HC-05 read** + **exclusive write**.
+No FileView `text()` / `setText`. No `head -c`. No `printf >`. No
+`Path.write_text`.
+
+**HC-05 read:** `scripts/progress.py` opens
+`O_RDONLY|O_NOFOLLOW|O_NONBLOCK|O_CLOEXEC`, `fstat` + `S_ISREG`, reads
+cap+1 (64 KiB). Missing / symlink / FIFO / oversize → exit 1, no body.
+QML hydrates via Process + SplitParser (`splitMarker: ""`).
+`maxHelperOutput` (69632) is above the helper cap; overflow kills the
+Process and does **not** `JSON.parse`.
+
+**Exclusive write:** helper `mkdir` dest dir 0700; exclusive tmp
+`O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW` 0600, write, fsync, `os.replace`.
+Never opens dest for write (symlink dest is replaced, not followed).
+Every Process.environment is `PATH=/usr/bin:/bin` and
+`PYTHONDONTWRITEBYTECODE=1`; argv is `python3 -B`.
+
+QML keeps `hydrate` / `seedDefaults` / `toProgress` JSON shape
+(`schemaVersion` 3). After parse, cap accepted fields: `childName` 16
+letters, star/stat ints, `selectedFriend` / `currentBoardId` id length 32,
+`lastDay` 16, old `unlocked` / `equipped` objects size-capped (not wiped).
 
 `childName` is typed in-panel (first exercise) and stored here, not in the
 manifest schema.
@@ -257,9 +279,8 @@ Copy Scriptural / Rocketlauncher:
   boards. Do not invent menus. Letters|Words stays under the letter on Play.
   Sound stays by the stars.
 
-`CharacterView` is unused (file may remain on disk). `PhosphorIcon.qml` can
-stay on disk for Celebration bursts; do not load it from Panel / Bar /
-Closet.
+`CharacterView.qml` is gone. `PhosphorIcon.qml` stays for Celebration bursts;
+do not load it from Panel / Bar / Trophies.
 
 ## Economy
 
@@ -280,9 +301,10 @@ theme, no `pw-play`. `playHit(special)` from `awardStars` (which
 Cooldown 90 ms. Stop when `!panelOpen`. Default `soundEnabled` ON.
 In-panel Sound toggle via `persistSetting('soundEnabled', …)`.
 
-## Non-goals (0.7)
+## Non-goals (0.8)
 
 Network, multi-child profiles, marketplace submit, home-row curriculum,
 user-dropped packs, dressing-room cosmetics, Phosphor character overlays,
 tap-name, remote Image/SVG, CI / GitHub Actions, `QtQuick.Effects` (do not
-risk panel load).
+risk panel load), settings GUI, middle-click features. Progress helper is
+local Python only — no sudo, no network.
