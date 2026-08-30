@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "kenhara.sparklekeys",
   "name": "Sparklekeys",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "author": "Harris Kenny",
   "license": "MIT",
-  "description": "Letter Hunt typing tutor for a first keyboard. Play is the hunt; Trophies is themed 4x5 unlock boards; tap a trophy to inspect it; the bar chip is the selected emoji. Sparkles default; dragon stub. Local only.",
+  "description": "Letter Hunt typing tutor for a first keyboard. First open: type a name and pick one of twelve avatars. Play is the hunt; Trophies is themed 4x5 unlock boards; tap a trophy to inspect it; the bar chip is the selected emoji. Sparkles default; dragon stub. Local only.",
   "kinds": [
     "bar-widget"
   ],
@@ -32,7 +32,7 @@
   ],
   "barWidget": {
     "displayName": "Sparklekeys",
-    "description": "Letter Hunt for a first keyboard. Play is hunt-only; Trophies is themed 4x5 unlock boards; tap a trophy to inspect it; the bar chip is the selected emoji. Local only.",
+    "description": "Letter Hunt for a first keyboard. First open: name plus a 12-emoji avatar. Play is hunt-only; Trophies is themed 4x5 unlock boards; tap a trophy to inspect it; the bar chip is the selected emoji. Local only.",
     "category": "Widgets",
     "allowMultiple": false,
     "defaultSection": "right",

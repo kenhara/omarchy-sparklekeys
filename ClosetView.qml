@@ -63,6 +63,23 @@ Item {
     root.inspectItem = null
   }
 
+  // Map a point on the inspect overlay back onto the board grid. Used so
+  // tapping another tile replaces the open card (no extra Close first).
+  function tileAt(srcItem, x, y) {
+    if (!srcItem)
+      return null
+    var kids = tileGrid.children
+    for (var i = 0; i < kids.length; i++) {
+      var ch = kids[i]
+      if (!ch || !ch.item || !String(ch.itemId || "").length)
+        continue
+      var p = ch.mapFromItem(srcItem, x, y)
+      if (p.x >= 0 && p.y >= 0 && p.x < ch.width && p.y < ch.height)
+        return ch
+    }
+    return null
+  }
+
   onOpenedChanged: {
     if (!root.opened)
       root.closeInspect()
@@ -178,7 +195,16 @@ Item {
       color: Qt.rgba(0, 0, 0, 0.55)
       MouseArea {
         anchors.fill: parent
-        onClicked: root.closeInspect()
+        onClicked: function(mouse) {
+          var hit = root.tileAt(scrim, mouse.x, mouse.y)
+          if (hit) {
+            root.openInspect(hit.item)
+            if (store && hit.unlocked)
+              store.selectFriend(hit.itemId)
+          } else {
+            root.closeInspect()
+          }
+        }
       }
     }
 

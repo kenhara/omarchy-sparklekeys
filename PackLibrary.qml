@@ -4,7 +4,8 @@ import QtQuick
 // Access packs through get() / ids() / exists(); boards through board() / friend().
 // Practice words are 4 tiers (keys "1".."4"), one every 10 levels — see wordTierForLevel.
 // ✨ sparkles is identity-only (product mark) — not a board tile. friend() still
-// resolves it so the bar chip can wear it.
+// resolves it so the bar chip can wear it. First-run avatars / avatar() is the
+// 12-pick catalog; friend() falls back there for eagle (not a board trophy).
 QtObject {
   id: library
 
@@ -95,6 +96,34 @@ QtObject {
     "level": 1,
     "blurb": "Tiny lights that twinkle."
   })
+
+  // First-run avatar catalog (id, emoji, label). Horse and cow also live on
+  // Friends; eagle is catalog-only — not a board trophy. friend() falls back
+  // here so the bar chip and signup tiles always resolve the twelve.
+  readonly property var avatars: [
+    { "id": "unicorn", "label": "Unicorn", "emoji": "🦄" },
+    { "id": "dragon", "label": "Dragon", "emoji": "🐉" },
+    { "id": "pig", "label": "Pig", "emoji": "🐷" },
+    { "id": "lion", "label": "Lion", "emoji": "🦁" },
+    { "id": "cat", "label": "Cat", "emoji": "🐱" },
+    { "id": "dog", "label": "Dog", "emoji": "🐶" },
+    { "id": "bunny", "label": "Bunny", "emoji": "🐰" },
+    { "id": "frog", "label": "Frog", "emoji": "🐸" },
+    { "id": "panda", "label": "Panda", "emoji": "🐼" },
+    { "id": "eagle", "label": "Eagle", "emoji": "🦅" },
+    { "id": "horse", "label": "Horse", "emoji": "🐴" },
+    { "id": "cow", "label": "Cow", "emoji": "🐮" }
+  ]
+
+  readonly property var avatarIdList: {
+    var list = library.avatars || []
+    var out = []
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] && list[i].id)
+        out.push(String(list[i].id))
+    }
+    return out
+  }
 
   // Four themed boards of 20 (4 row × 5 col). Four trophies unlock per level (cap 20).
   // Emoji are wide-adoption (Unicode 6.0; unicorn + sun-with-face are 8.0). No new-era glyphs.
@@ -299,6 +328,20 @@ QtObject {
     return library.board("wild")
   }
 
+  function avatarIds() {
+    return library.avatarIdList
+  }
+
+  function avatar(id) {
+    var want = String(id || "")
+    var list = library.avatars || []
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] && String(list[i].id) === want)
+        return list[i]
+    }
+    return null
+  }
+
   function friend(id) {
     var want = String(id || "")
     if (library.identity && String(library.identity.id) === want)
@@ -311,7 +354,7 @@ QtObject {
           return friends[i]
       }
     }
-    return null
+    return library.avatar(want)
   }
 
   function boardForFriend(id) {
