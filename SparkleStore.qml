@@ -47,6 +47,9 @@ Item {
   property string viewMode: "play"
   property bool askingName: false
   property string nameDraft: ""
+  // First-run avatar pick. Unicorn is pre-selected so That's me! needs no extra tap.
+  property string avatarDraft: "unicorn"
+  readonly property var avatarIds: packLib.avatarIdList
   property int streak: 0
   property string targetLetter: "a"
   property int letterCursor: 0
@@ -291,13 +294,51 @@ Item {
     store.showBoard(n.id)
   }
 
+  function isAvatarId(id) {
+    var s = String(id || "").trim().toLowerCase()
+    if (packLib && typeof packLib.avatar === "function" && packLib.avatar(s))
+      return true
+    var ids = store.avatarIds || []
+    for (var i = 0; i < ids.length; i++) {
+      if (String(ids[i]) === s)
+        return true
+    }
+    return false
+  }
+
+  function normalizeAvatar(id) {
+    var s = String(id || "unicorn").trim().toLowerCase()
+    if (store.isAvatarId(s))
+      return s
+    return "unicorn"
+  }
+
+  function friendEmoji(id) {
+    var f = packLib.friend(id)
+    return (f && f.emoji) ? String(f.emoji) : ""
+  }
+
+  // The twelve first-run avatars may be worn even when that trophy is still
+  // locked on the board (lion / dragon / panda / horse / cow). Eagle is
+  // catalog-only (not a board tile). Inspect still only calls selectFriend
+  // for unlocked tiles.
+  function canWearFriend(id) {
+    var sid = String(id || "")
+    if (!packLib.friend(sid))
+      return false
+    if (store.isAvatarId(sid))
+      return true
+    return store.isFriendUnlocked(sid)
+  }
+
   function selectFriend(id) {
     var sid = store.normalizeFriend(id)
-    if (!store.isFriendUnlocked(sid))
+    if (!store.canWearFriend(sid))
       return
     store.selectedFriend = sid
     var b = packLib.boardForFriend(sid)
-    if (b && b.id)
+    // Do not snap Trophies onto a board she has not unlocked (first-run panda).
+    if (b && b.id && store.isBoardUnlocked(String(b.id)))
       store.currentBoardId = String(b.id)
     store.bumpBoard()
     store.scheduleSave()
@@ -547,12 +588,19 @@ Item {
 
   function beginNameEdit() {
     store.nameDraft = String(store.childName || "")
+    store.avatarDraft = "unicorn"
     store.askingName = true
   }
 
   function skipName() {
+    store.childName = ""
+    store.selectedFriend = packLib.defaultFriendId
     store.askingName = false
     store.nameDraft = ""
+    store.avatarDraft = "unicorn"
+    // Empty name; bar stays product default ✨. Persist so hydrate does
+    // not re-show the name screen on the next open.
+    store.scheduleSave()
   }
 
   function sanitizeName(s) {
@@ -567,6 +615,9 @@ Item {
     store.childName = next
     store.askingName = false
     store.nameDraft = ""
+    var avatar = store.normalizeAvatar(store.avatarDraft)
+    store.selectFriend(avatar)
+    store.avatarDraft = "unicorn"
     store.letterCursor = 0
     store.ensureTarget()
     store.scheduleSave()
@@ -591,6 +642,7 @@ Item {
     store.todayCount = 0
     store.dailyGoalHit = false
     store.selectedFriend = packLib.defaultFriendId
+    store.avatarDraft = "unicorn"
     store.currentBoardId = "friends"
     store.unlockedByPack = ({})
     store.equippedByPack = ({})
@@ -653,7 +705,7 @@ Item {
       store.todayCount = Math.max(0, Math.floor(Number(stats.todayCount) || 0))
       store.dailyGoalHit = !!stats.dailyGoalHit
       var friendId = store.normalizeFriend(obj.selectedFriend || packLib.defaultFriendId)
-      if (!store.isFriendUnlocked(friendId))
+      if (!store.canWearFriend(friendId))
         friendId = packLib.defaultFriendId
       store.selectedFriend = friendId
       var boardId = store.normalizeBoard(obj.currentBoardId || "friends")

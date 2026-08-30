@@ -81,6 +81,62 @@ Item {
           }
         }
 
+        Text {
+          width: parent.width
+          text: "Pick a friend"
+          textFormat: Text.PlainText
+          color: root.foreground
+          opacity: 0.7
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+          horizontalAlignment: Text.AlignHCenter
+        }
+
+        Grid {
+          id: avatarGrid
+          anchors.horizontalCenter: parent.horizontalCenter
+          columns: 3
+          columnSpacing: Style.space(6)
+          rowSpacing: Style.space(6)
+
+          Repeater {
+            model: store && store.avatarIds ? store.avatarIds : []
+            delegate: Rectangle {
+              required property var modelData
+              readonly property string avatarId: String(modelData || "")
+              readonly property bool chosen: store && String(store.avatarDraft || "") === avatarId
+              readonly property bool hovered: avatarMa.containsMouse
+              width: Style.space(52)
+              height: Style.space(52)
+              radius: Style.space(12)
+              color: chosen
+                ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.28)
+                : (hovered
+                    ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.16)
+                    : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.07))
+              border.width: chosen ? 2 : 1
+              border.color: chosen
+                ? root.accent
+                : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.16)
+
+              Text {
+                anchors.centerIn: parent
+                text: store ? store.friendEmoji(avatarId) : ""
+                textFormat: Text.PlainText
+                font.pixelSize: Style.font.body * 2
+              }
+
+              MouseArea {
+                id: avatarMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: if (store) store.avatarDraft = avatarId
+              }
+            }
+          }
+        }
+
         Row {
           anchors.horizontalCenter: parent.horizontalCenter
           spacing: Style.space(8)
@@ -247,7 +303,6 @@ Item {
           }
           textFormat: Text.PlainText
           color: root.accent
-          font.family: root.fontFamily
           font.pixelSize: Style.font.bodySmall
           font.bold: true
           horizontalAlignment: Text.AlignHCenter

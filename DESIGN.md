@@ -1,6 +1,6 @@
 # Sparklekeys — design notes
 
-**Status:** 0.6.0  
+**Status:** 0.7.0  
 **Id:** `kenhara.sparklekeys`  
 **Peers:** Scriptural, Rocketlauncher, Encyclopedic, Enricherino, Compliantish
 
@@ -25,7 +25,12 @@ is not gray-while-worn, and adds in-room trophy inspect. Word Mode picks from
 a pack tier every 10 levels (many short words, still no Shift). Displayed
 level is uncapped (header can show Lv 21+); trophy boards still cap at 20.
 Play stays hunt-only. Greeting uses her saved name (Jane). Default selected
-trophy is sparkles.
+trophy is sparkles. 0.7 adds a first-open avatar pick: twelve animals in a
+3×4 (unicorn pre-selected), including eagle / horse / cow. That's me! wears
+the pick on the bar chip even if that trophy is still locked. Eagle is
+catalog-only (not a board trophy). Skip leaves ✨ and writes progress so the
+name screen does not return. Existing progress.json users do not see
+askingName again.
 
 ## The pack is the world
 
@@ -43,7 +48,8 @@ do not own the Trophies boards.
 Built-in packs live in `PackLibrary.qml`. Access only through `get` / `ids` /
 `exists`. Trophy boards live in the same library (`board` / `friend` /
 `boardIds` / `boardForLevel`). `friend()` also resolves the identity mark
-`sparkles` (✨), which is not a board tile.
+`sparkles` (✨), which is not a board tile, and falls back to the first-run
+avatar catalog so eagle 🦅 resolves for the bar chip and signup tiles.
 
 ## Trophies boards
 
@@ -63,12 +69,14 @@ level (the previous board is complete at the same moment).
 | Wild    | Lv 16   | 16–20  | bear…whale2 |
 
 Wide-adoption emoji only (mostly Unicode 6.0; unicorn and sun-with-face are
-8.0). No new-era emoji (no fox, butterfly, owl, fairy, wand).
+8.0). No new-era emoji on boards (no fox, butterfly, owl, fairy, wand).
+Eagle 🦅 is first-run catalog only — do not add it as a 21st Friends tile.
 
 Emoji `Text` must **not** set `font.family` to monospace / `contentFontFamily`
 — that tofu's color emoji. Leave `font.family` unset on emoji-only Text so
-the system color-emoji font (Noto Color Emoji) is used. Labels (Lv N, room
-chrome) can use `contentFontFamily`.
+the system color-emoji font (Noto Color Emoji) is used. The mixed `+N ⭐`
+award overlay is the same: do not set `font.family` (bar/system emoji font).
+Labels (Lv N, room chrome) can use `contentFontFamily`.
 
 `isFriendUnlocked(id)` is `level >= that trophy's level` (identity `sparkles` is always unlocked).
 `isBoardUnlocked(id)` is `level >= that board's unlockLevel`.
@@ -124,7 +132,8 @@ WidgetButton is text-only. The selected emoji goes in an overlay `Text`
 (no `font.family`) beside `WidgetButton.text`, plus an optional star count.
 No Phosphor overlay, no hat overlay, no horn Shape. Tooltip:
 `Sparklekeys · Friend · Lv N · stars`. This chip is the tray of who she is
-during a lesson.
+during a lesson — first-open That's me! puts the chosen animal here (the old
+unicorn slot). Skip / seed default is ✨. Header product mark stays ✨.
 
 ## Header
 
@@ -171,9 +180,27 @@ is enough.
 
 ## Name
 
-First-open `askingName` flow stays. Centered field, no companion on the
-left. Tapping the greeting does **not** edit the name (`beginNameEdit`
-remains unused). No `· tap name` subtitle.
+First-open `askingName` flow stays. Centered column, no companion on the
+left. Type a name, then pick a friend from a 3×4 of twelve animals
+(unicorn 🦄, dragon 🐉, pig 🐷, lion 🦁, cat 🐱, dog 🐶, bunny 🐰, frog 🐸,
+panda 🐼, eagle 🦅, horse 🐴, cow 🐮). Unicorn is pre-selected so That's me!
+works with no extra tap. If the grid is tight in the first-run column,
+tiles are `Style.space(52)` so That's me / Skip still sit on screen.
+Emoji `Text` on those tiles has **no** `font.family`. Selected tile gets an
+accent ring. Do not gray signup tiles (full color even when that trophy is
+locked). The twelve live in `PackLibrary.avatars`; horse and cow are also
+Friends trophies; eagle is catalog-only.
+
+That's me! saves name + `selectFriend(avatarDraft)` (ids that are not one
+of the twelve fall back to unicorn). Empty name is allowed — still wears
+the chosen avatar and `scheduleSave`. Wearing an avatar is allowed even if
+that trophy is still locked on the board; inspect still only wears unlocked
+trophies. Skip: no name, bar stays product default ✨ — do not force a board
+animal — and `scheduleSave` so hydrate sets `askingName` false. `avatarDraft`
+lives only while `askingName` (default `unicorn`).
+
+Tapping the greeting does **not** edit the name (`beginNameEdit` remains
+unused). No `· tap name` subtitle. Greeting example stays Jane.
 
 ## No-fail, shift-free, low text
 
@@ -186,7 +213,7 @@ remains unused). No `· tap name` subtitle.
 - The +1 ⭐ award flash (and streak / word / daily variants) overlays the
   letter. It must not live in the hunt Column with `visible`/`height`
   0→implicitHeight — that shoves the keyboard down on a hit. Column height
-  stays constant.
+  stays constant. Do not set `font.family` on that mixed `+N ⭐` Text.
 
 ## Progress lives in share, not cache
 
@@ -200,7 +227,8 @@ manifest schema.
 
 `schemaVersion` 3. Persist `selectedFriend` (and last-viewed `currentBoardId`
 for shape stability). Hydrate old `selectedFriend` ids that still exist
-(unicorn, cat, sparkles, …). Unknown ids → sparkles. Hydrate old stars / name / stats.
+(unicorn, cat, sparkles, …). Unknown ids → sparkles. The twelve first-run
+avatars stay worn even if that trophy is still locked. Hydrate old stars / name / stats.
 Ignore old `unlocked` / `equipped` / hat / skin for gameplay; do not wipe
 those file keys if present.
 
@@ -252,7 +280,7 @@ theme, no `pw-play`. `playHit(special)` from `awardStars` (which
 Cooldown 90 ms. Stop when `!panelOpen`. Default `soundEnabled` ON.
 In-panel Sound toggle via `persistSetting('soundEnabled', …)`.
 
-## Non-goals (0.6)
+## Non-goals (0.7)
 
 Network, multi-child profiles, marketplace submit, home-row curriculum,
 user-dropped packs, dressing-room cosmetics, Phosphor character overlays,
