@@ -1,19 +1,38 @@
 # Sparklekeys
 
 Letter Hunt for a first keyboard. Play is hunt-only (the letter and the
-keyboard). Trophies is themed 4×5 unlock boards. The bar chip is the selected
-emoji — who she is during a lesson.
+keyboard). Trophies is themed 4×5 unlock boards; tap a trophy to inspect it
+(big emoji + title + blurb). The bar chip is the selected emoji — who she is
+during a lesson. The product mark is ✨.
 
-The world is a **pack** — unicorn ships as the default; dragon is a stub so
-switching practice words and accents is data, not a rewrite. Local only. No
-network.
+The world is a **pack** — unicorn ships as the default practice-word pack
+(4 word tiers, one every 10 levels); dragon uses the same shape so switching
+words and accents is data, not a rewrite. Local only. No network.
 
 **ID:** `kenhara.sparklekeys`  
 **Author:** Harris Kenny  
 **License:** MIT  
-**Version:** 0.5.0
+**Version:** 0.6.0
 
 **Repo:** https://github.com/kenhara/omarchy-sparklekeys
+
+### 0.6.0
+
+- Primary mark is ✨: header glyph and default bar wear (`selectedFriend`
+  `sparkles`). Unicorn stays a Friends-board trophy and the default
+  `characterPack`. Sparkles is identity-only — not a Sky tile (that would be
+  gray on Sky while worn on the bar). Sky's old sparkles slot is fireworks 🎆
+  (`id: fireworks`).
+- Tap any trophy (locked or unlocked) to inspect: huge emoji, title, and a
+  short kid-simple blurb. Unlocked inspect also wears it on the bar. Locked
+  stays gray and shows `Lv N` / keep practicing. Close via scrim or Close.
+  Greeting example stays Jane.
+- +1 ⭐ award flash (and streak / word / daily variants) overlays the letter
+  so the keyboard does not jump.
+- Word Mode picks from a pack **tier every 10 levels** (many short words,
+  still no Shift). Displayed level is uncapped (`1 + floor(totalEarned / 15)`,
+  header can show Lv 21+). Trophy boards and unlocks still cap at 20; after
+  that Trophies stay complete.
 
 ### 0.5.0
 
@@ -148,17 +167,20 @@ qmllint -I "$OMARCHY_PATH/shell" *.qml
 4. Right key → stars + celebration + next letter. Wrong key → wiggle + brighter
    glow. No timers, no game over, no score loss.
 5. Tap **Trophies** in the header to open the board for her current level.
-   Trophies light up as you level up. Tap an unlocked trophy to wear it on
-   the bar chip. Locked tiles are gray with `Lv N`. **Next** pages to the
-   next themed board once it is unlocked; otherwise it stays dim (`keep
-   practicing` / `Lv 6`). **Back to hunt** returns to Play.
+   Trophies light up as you level up. Tap a trophy to inspect it (big emoji,
+   title, blurb). Unlocked inspect also wears it on the bar chip. Locked
+   tiles are gray with `Lv N` and still show their name and blurb. **Next**
+   pages to the next themed board once it is unlocked; otherwise it stays
+   dim (`keep practicing` / `Lv 6`). **Back to hunt** returns to Play.
 6. Escape or click-away closes. Progress survives a shell restart.
 
 Letter order starts with the letters of the child's name (when set), then a
 curated easy cycle.
 
-Level is `1 + floor(totalEarned / 15)`, capped at 20. Four trophies unlock
-per level. Trophies are not bought with stars.
+Level is `1 + floor(totalEarned / 15)` (header uncapped). Four trophies
+unlock per level through 20; boards stay complete after that. Trophies are
+not bought with stars. Words mode uses the active pack's tier for her
+current level.
 
 ### Controls
 
@@ -170,7 +192,8 @@ per level. Trophies are not bought with stars.
 | Play / Trophies (header) | Switch hunt ↔ trophy boards |
 | Back to hunt (Trophies) | Return to the hunt |
 | Prev / Next (Trophies) | Page boards (Next only when unlocked) |
-| Trophy tile | Wear if unlocked |
+| Trophy tile | Inspect (wear if unlocked) |
+| Inspect Close / scrim | Close the inspect card |
 | Letters / Words switch (under the letter, Play only) | Toggle start mode (mirrors `startMode`) |
 | Sound pill (by stars) | Toggle cartoon hit / sparkle |
 | Name: Enter | Save name (first-open flow) |
@@ -199,7 +222,7 @@ omarchy bar set kenhara.sparklekeys showStarsOnBar true
 omarchy bar set kenhara.sparklekeys soundEnabled true
 ```
 
-Pack-swap proof: `characterPack dragon` switches practice words and accent
+Pack-swap proof: `characterPack dragon` switches practice-word tiers and accent
 colors with **zero logic changes**. Trophies boards are shared, not per-pack.
 
 ## Remove
@@ -235,7 +258,7 @@ No freedesktop theme chimes. Credit: [Kenney.nl](https://kenney.nl/assets/interf
   Written with Quickshell `FileView` (`atomicWrites`). The plugin `mkdir`s the
   data dir `0700` before the first save. Missing or corrupt file seeds a
   working default game. `schemaVersion` 3 stores `selectedFriend` (unknown
-  ids fall back to unicorn). Trophies snaps to the current-level board on
+  ids fall back to sparkles). Trophies snaps to the current-level board on
   enter. Old stars / name / stats still hydrate. Old closet unlock keys are
   ignored for play but not wiped.
 - **Why not `~/.cache`:** this is earned progress. A cache cleaner must not
@@ -245,14 +268,14 @@ No freedesktop theme chimes. Credit: [Kenney.nl](https://kenney.nl/assets/interf
 ## Layout
 
 ```
-manifest.json       # kenhara.sparklekeys @ 0.5.0
+manifest.json       # kenhara.sparklekeys @ 0.6.0
 qmldir
 BarWidget.qml       # bar chip (selected emoji) + Loader → Panel; owns SparkleStore
 Panel.qml           # KeyboardPanel + two-line header (Play|Trophies, greeting, Sound)
 SparkleStore.qml    # state, economy, FileView progress, SoundEffect
-PackLibrary.qml     # unicorn + dragon stub; Friends / Garden / Sky / Wild 4×5 boards
+PackLibrary.qml     # unicorn + dragon 4-tier words; identity ✨; Friends / Garden / Sky / Wild 4×5 boards
 PlayView.qml
-ClosetView.qml      # Trophies room (4×5 themed unlock boards)
+ClosetView.qml      # Trophies room (4×5 boards + inspect overlay)
 KeyboardHint.qml
 Celebration.qml
 StarCounter.qml

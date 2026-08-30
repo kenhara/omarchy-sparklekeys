@@ -24,7 +24,7 @@ Item {
   property string childName: ""
   property int stars: 0
   property int totalEarned: 0
-  property string selectedFriend: "unicorn"
+  property string selectedFriend: "sparkles"
   property string currentBoardId: "friends"
   // currentBoardId is session-snapped on Trophies enter / level-up; still
   // written in schema 3 so persist shape does not change.
@@ -53,6 +53,7 @@ Item {
   property string currentWord: "star"
   property int wordPick: 0
   property int wordCursor: 0
+  property int _wordTierUsed: 0
   property bool celebrating: false
   property bool specialCelebrate: false
   property bool wiggle: false
@@ -99,11 +100,11 @@ Item {
   readonly property string effectStyle: "sparkles"
   readonly property string selectedEmoji: {
     var f = packLib.friend(store.selectedFriend)
-    return (f && f.emoji) ? String(f.emoji) : "🦄"
+    return (f && f.emoji) ? String(f.emoji) : "✨"
   }
   readonly property string selectedFriendLabel: {
     var f = packLib.friend(store.selectedFriend)
-    return (f && f.label) ? String(f.label) : "Unicorn"
+    return (f && f.label) ? String(f.label) : "Sparkles"
   }
   readonly property var currentBoard: {
     var _ = store.boardRev
@@ -143,11 +144,9 @@ Item {
   }
   readonly property int level: {
     var n = 1 + Math.floor(Math.max(0, Number(store.totalEarned) || 0) / 15)
-    return Math.max(1, Math.min(20, n))
+    return Math.max(1, n)
   }
   readonly property real levelProgress: {
-    if (store.level >= 20)
-      return 1
     return (Math.max(0, Number(store.totalEarned) || 0) % 15) / 15
   }
 
@@ -217,6 +216,8 @@ Item {
     var f = packLib.friend(id)
     if (!f)
       return false
+    if (packLib.identity && String(packLib.identity.id) === String(id || ""))
+      return true
     var lv = Math.max(1, Math.floor(Number(f.level) || 1))
     return store.level >= lv
   }
@@ -340,9 +341,35 @@ Item {
     store.targetLetter = q[store.letterCursor]
   }
 
-  function ensureWord() {
+  function wordTierForLevel(level) {
+    if (typeof packLib.wordTierForLevel === "function")
+      return packLib.wordTierForLevel(level)
+    var lv = Math.max(1, Math.floor(Number(level) || 1))
+    if (lv <= 10)
+      return 1
+    if (lv <= 20)
+      return 2
+    if (lv <= 30)
+      return 3
+    return 4
+  }
+
+  function wordsForCurrentTier() {
     var p = store.currentPack()
-    var words = (p && p.practiceWords && p.practiceWords.length) ? p.practiceWords : ["star"]
+    var tier = store.wordTierForLevel(store.level)
+    if (typeof packLib.practiceWordsForTier === "function")
+      return packLib.practiceWordsForTier(p, tier)
+    return ["star"]
+  }
+
+  function ensureWord() {
+    var tier = store.wordTierForLevel(store.level)
+    var words = store.wordsForCurrentTier()
+    if (store._wordTierUsed !== tier) {
+      store._wordTierUsed = tier
+      store.wordPick = 0
+      store.wordCursor = 0
+    }
     if (store.wordPick < 0 || store.wordPick >= words.length)
       store.wordPick = 0
     store.currentWord = String(words[store.wordPick] || "star")
@@ -352,9 +379,16 @@ Item {
   }
 
   function nextWord() {
-    var p = store.currentPack()
-    var words = (p && p.practiceWords && p.practiceWords.length) ? p.practiceWords : ["star"]
-    store.wordPick = (store.wordPick + 1) % words.length
+    var tier = store.wordTierForLevel(store.level)
+    var words = store.wordsForCurrentTier()
+    if (store._wordTierUsed !== tier) {
+      store._wordTierUsed = tier
+      store.wordPick = 0
+    } else {
+      store.wordPick = (store.wordPick + 1) % Math.max(1, words.length)
+    }
+    if (store.wordPick < 0 || store.wordPick >= words.length)
+      store.wordPick = 0
     store.currentWord = String(words[store.wordPick] || "star")
     store.wordCursor = 0
     store.targetLetter = store.currentWord.charAt(0)
@@ -455,8 +489,12 @@ Item {
     if (typed === want) {
       store.wordCursor += 1
       var done = store.wordCursor >= word.length
+      var prevTier = store.wordTierForLevel(store.level)
       store.noteCorrectLetter({ wordBonus: done, special: done })
-      if (done)
+      var newTier = store.wordTierForLevel(store.level)
+      if (newTier !== prevTier)
+        store.ensureWord()
+      else if (done)
         store.nextWord()
       else
         store.targetLetter = word.charAt(store.wordCursor)
@@ -559,6 +597,7 @@ Item {
     store.letterCursor = 0
     store.wordPick = 0
     store.wordCursor = 0
+    store._wordTierUsed = 0
     store.ensureTarget()
     store.bumpBoard()
     store.hydrated = true
@@ -625,6 +664,7 @@ Item {
       store.letterCursor = 0
       store.wordPick = 0
       store.wordCursor = 0
+      store._wordTierUsed = 0
       store.ensureTarget()
       store.bumpBoard()
       store.askingName = false
@@ -683,6 +723,7 @@ Item {
   onEffectivePackChanged: {
     store.wordPick = 0
     store.wordCursor = 0
+    store._wordTierUsed = 0
     store.letterCursor = 0
     store.ensureTarget()
   }

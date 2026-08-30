@@ -113,7 +113,7 @@ Panel {
 
               Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: "🦄"
+                text: "✨"
                 textFormat: Text.PlainText
                 font.pixelSize: Style.font.body
               }
@@ -188,7 +188,6 @@ Panel {
                 }
 
                 Rectangle {
-                  visible: liveStore && liveStore.level < 20
                   anchors.right: parent.right
                   width: Style.space(48)
                   height: 3
@@ -220,7 +219,7 @@ Panel {
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             flickableDirection: Flickable.VerticalFlick
-            interactive: contentHeight > height
+            interactive: contentHeight > height && !(closetView && closetView.inspectOpen)
             contentWidth: width
             contentHeight: innerCol.implicitHeight
 
@@ -244,6 +243,7 @@ Panel {
               }
 
               ClosetView {
+                id: closetView
                 width: parent.width
                 visible: liveStore && liveStore.viewMode === "closet"
                 height: visible ? implicitHeight : 0
@@ -254,6 +254,7 @@ Panel {
                 accent: root.packAccent
                 aura: root.packAura
                 fontFamily: root.contentFontFamily
+                overlayHost: inspectHost
               }
             }
           }
@@ -279,6 +280,16 @@ Panel {
           aura: root.packAura
           accent: root.packAccent
           active: root.opened
+        }
+
+        Item {
+          id: inspectHost
+          anchors.fill: flick
+          z: 40
+          visible: closetView && closetView.inspectOpen
+            && liveStore && liveStore.viewMode === "closet"
+          enabled: visible
+          clip: true
         }
       }
     }

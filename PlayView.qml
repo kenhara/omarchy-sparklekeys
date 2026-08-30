@@ -228,30 +228,34 @@ Item {
               letterBox.scale = 1
           }
         }
+
+        // Award flash overlays the letter. Must not live in the hunt Column
+        // with visible/height 0→implicitHeight — that shoves the keyboard.
+        Text {
+          z: 2
+          anchors.horizontalCenter: letterBox.horizontalCenter
+          anchors.bottom: letterBox.bottom
+          anchors.bottomMargin: Style.space(14)
+          visible: store && store.lastAward > 0 && store.celebrating && root.opened
+          text: {
+            var n = store ? store.lastAward : 0
+            var why = store ? String(store.lastAwardReason || "") : ""
+            if (why === "daily") return "+" + n + " ⭐  daily goal!"
+            if (why === "streak") return "+" + n + " ⭐  streak!"
+            if (why === "word") return "+" + n + " ⭐  word!"
+            return "+" + n + " ⭐"
+          }
+          textFormat: Text.PlainText
+          color: root.accent
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.bodySmall
+          font.bold: true
+          horizontalAlignment: Text.AlignHCenter
+        }
       }
 
       ModeSwitch {
         anchors.horizontalCenter: parent.horizontalCenter
-      }
-
-      Text {
-        width: parent.width
-        visible: store && store.lastAward > 0 && store.celebrating
-        height: visible ? implicitHeight : 0
-        text: {
-          var n = store ? store.lastAward : 0
-          var why = store ? String(store.lastAwardReason || "") : ""
-          if (why === "daily") return "+" + n + " ⭐  daily goal!"
-          if (why === "streak") return "+" + n + " ⭐  streak!"
-          if (why === "word") return "+" + n + " ⭐  word!"
-          return "+" + n + " ⭐"
-        }
-        textFormat: Text.PlainText
-        color: root.accent
-        font.family: root.fontFamily
-        font.pixelSize: Style.font.bodySmall
-        font.bold: true
-        horizontalAlignment: Text.AlignHCenter
       }
     }
 

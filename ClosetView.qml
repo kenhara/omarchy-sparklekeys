@@ -2,8 +2,9 @@ import QtQuick
 import qs.Commons
 
 // Trophies room: themed 4×5 emoji boards. Hunt is gone.
-// Unlocks are level-gated (4 per level). Tap an unlocked trophy to wear it
-// on the bar chip. Color emoji cannot be tinted with Text.color — locked
+// Unlocks are level-gated (4 per level). Tap a tile to inspect it
+// (big emoji + title + blurb). Unlocked inspect also wears it on the
+// bar chip. Color emoji cannot be tinted with Text.color — locked
 // tiles use a stone background + low emoji opacity (no QtQuick.Effects).
 Item {
   id: root
@@ -15,6 +16,18 @@ Item {
   property color accent: "#ff6bb5"
   property color aura: "#ff9ad5"
   property string fontFamily: "monospace"
+  // Panel hosts this so the inspect card sits over the Flickable viewport
+  // (does not scroll with the board, does not cover the header).
+  property Item overlayHost: null
+
+  property var inspectItem: null
+  readonly property bool inspectOpen: inspectItem !== null && inspectItem !== undefined
+  readonly property bool inspectUnlocked: {
+    var _ = root.rev
+    if (!root.inspectItem || !store)
+      return false
+    return store.isFriendUnlocked(root.inspectItem.id)
+  }
 
   readonly property int rev: store ? store.boardRev : 0
   readonly property string boardTitle: {
@@ -39,6 +52,28 @@ Item {
   }
 
   implicitHeight: roomCol.implicitHeight
+
+  function openInspect(item) {
+    if (!item)
+      return
+    root.inspectItem = item
+  }
+
+  function closeInspect() {
+    root.inspectItem = null
+  }
+
+  onOpenedChanged: {
+    if (!root.opened)
+      root.closeInspect()
+  }
+
+  Connections {
+    target: store
+    enabled: store !== null
+    function onViewModeChanged() { root.closeInspect() }
+    function onCurrentBoardIdChanged() { root.closeInspect() }
+  }
 
   Column {
     id: roomCol
@@ -127,6 +162,127 @@ Item {
     }
   }
 
+  // In-room inspect: parented onto overlayHost so it covers the visible
+  // board (Flickable viewport), not a new room and not a browser.
+  Item {
+    id: inspectLayer
+    parent: root.overlayHost ? root.overlayHost : root
+    anchors.fill: parent
+    visible: root.inspectOpen
+    enabled: visible
+    z: 40
+
+    Rectangle {
+      id: scrim
+      anchors.fill: parent
+      color: Qt.rgba(0, 0, 0, 0.55)
+      MouseArea {
+        anchors.fill: parent
+        onClicked: root.closeInspect()
+      }
+    }
+
+    Rectangle {
+      id: inspectCard
+      anchors.centerIn: parent
+      width: Math.max(
+        Style.space(200),
+        Math.min(parent.width - Style.space(28), Style.space(280)))
+      implicitHeight: cardCol.implicitHeight + Style.space(28)
+      height: implicitHeight
+      radius: Style.space(16)
+      color: Qt.rgba(0.12, 0.12, 0.14, 0.97)
+      border.width: 1
+      border.color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.5)
+
+      MouseArea {
+        anchors.fill: parent
+        // Eat clicks so they do not close via the scrim.
+      }
+
+      Column {
+        id: cardCol
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.margins: Style.space(14)
+        spacing: Style.space(8)
+
+        Text {
+          width: parent.width
+          text: root.inspectItem && root.inspectItem.emoji
+            ? String(root.inspectItem.emoji)
+            : ""
+          textFormat: Text.PlainText
+          font.pixelSize: Style.font.body * 7
+          opacity: root.inspectUnlocked ? 1 : 0.22
+          horizontalAlignment: Text.AlignHCenter
+        }
+
+        Text {
+          width: parent.width
+          text: root.inspectItem && root.inspectItem.label
+            ? String(root.inspectItem.label)
+            : ""
+          textFormat: Text.PlainText
+          color: root.foreground
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.body
+          font.bold: true
+          wrapMode: Text.WordWrap
+          horizontalAlignment: Text.AlignHCenter
+        }
+
+        Text {
+          width: parent.width
+          visible: !!(root.inspectItem && root.inspectItem.blurb
+            && String(root.inspectItem.blurb).length)
+          height: visible ? implicitHeight : 0
+          text: root.inspectItem && root.inspectItem.blurb
+            ? String(root.inspectItem.blurb)
+            : ""
+          textFormat: Text.PlainText
+          color: root.foreground
+          opacity: 0.85
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.bodySmall
+          wrapMode: Text.WordWrap
+          horizontalAlignment: Text.AlignHCenter
+        }
+
+        Text {
+          width: parent.width
+          visible: !root.inspectUnlocked && root.inspectItem
+          height: visible ? implicitHeight : 0
+          text: "Lv " + (root.inspectItem
+            ? Math.max(1, Math.floor(Number(root.inspectItem.level) || 1))
+            : 1)
+          textFormat: Text.PlainText
+          color: root.dimForeground
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+          horizontalAlignment: Text.AlignHCenter
+        }
+
+        Text {
+          width: parent.width
+          visible: !root.inspectUnlocked && root.inspectItem
+          height: visible ? implicitHeight : 0
+          text: "keep practicing"
+          textFormat: Text.PlainText
+          color: root.dimForeground
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+          horizontalAlignment: Text.AlignHCenter
+        }
+
+        ClosePill {
+          anchors.horizontalCenter: parent.horizontalCenter
+        }
+      }
+    }
+  }
+
   component NavPill: Rectangle {
     id: nav
     property string label: ""
@@ -200,6 +356,39 @@ Item {
     }
   }
 
+  component ClosePill: Rectangle {
+    id: closePill
+    readonly property bool hovered: closeMa.containsMouse
+    implicitWidth: closeLabel.implicitWidth + Style.space(20)
+    implicitHeight: Style.space(28)
+    width: implicitWidth
+    height: implicitHeight
+    radius: height / 2
+    color: closePill.hovered
+      ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.28)
+      : Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.18)
+    border.width: 1
+    border.color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.5)
+
+    Text {
+      id: closeLabel
+      anchors.centerIn: parent
+      text: "Close"
+      textFormat: Text.PlainText
+      color: root.foreground
+      font.family: root.fontFamily
+      font.pixelSize: Style.font.bodySmall
+      font.bold: true
+    }
+    MouseArea {
+      id: closeMa
+      anchors.fill: parent
+      hoverEnabled: true
+      cursorShape: Qt.PointingHandCursor
+      onClicked: root.closeInspect()
+    }
+  }
+
   component TrophyTile: Rectangle {
     id: tile
     property var item: ({})
@@ -216,7 +405,7 @@ Item {
       var _ = tile.rev
       return store && String(store.selectedFriend || "") === tile.itemId
     }
-    readonly property bool hovered: tile.unlocked && tileMa.containsMouse
+    readonly property bool hovered: tileMa.containsMouse
 
     implicitHeight: Math.max(
       width * 0.78,
@@ -272,13 +461,12 @@ Item {
     MouseArea {
       id: tileMa
       anchors.fill: parent
-      enabled: tile.unlocked
       hoverEnabled: true
-      cursorShape: tile.unlocked ? Qt.PointingHandCursor : Qt.ArrowCursor
+      cursorShape: Qt.PointingHandCursor
       onClicked: {
-        if (!store || !tile.unlocked)
-          return
-        store.selectFriend(tile.itemId)
+        root.openInspect(tile.item)
+        if (store && tile.unlocked)
+          store.selectFriend(tile.itemId)
       }
     }
   }
