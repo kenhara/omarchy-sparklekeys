@@ -161,19 +161,6 @@ Item {
       height: visible ? implicitHeight : 0
       spacing: Style.space(8)
 
-      Text {
-        width: parent.width
-        visible: root.wordMode
-        height: visible ? implicitHeight : 0
-        text: "Type the word"
-        textFormat: Text.PlainText
-        color: root.foreground
-        opacity: 0.5
-        font.family: root.fontFamily
-        font.pixelSize: Style.font.caption
-        horizontalAlignment: Text.AlignHCenter
-      }
-
       Row {
         visible: root.wordMode
         height: visible ? implicitHeight : 0

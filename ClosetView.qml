@@ -108,18 +108,6 @@ Item {
       horizontalAlignment: Text.AlignHCenter
     }
 
-    Text {
-      width: parent.width
-      text: "Trophies light up as you level up."
-      textFormat: Text.PlainText
-      color: root.foreground
-      opacity: 0.5
-      font.family: root.fontFamily
-      font.pixelSize: Style.font.caption
-      wrapMode: Text.WordWrap
-      horizontalAlignment: Text.AlignHCenter
-    }
-
     Item {
       width: parent.width
       height: navRow.implicitHeight
@@ -141,18 +129,6 @@ Item {
           onClicked: if (store) store.nextBoard()
         }
       }
-    }
-
-    Text {
-      width: parent.width
-      visible: !root.canNext && root.nextLevel > 0
-      height: visible ? implicitHeight : 0
-      text: "keep practicing"
-      textFormat: Text.PlainText
-      color: root.dimForeground
-      font.family: root.fontFamily
-      font.pixelSize: Style.font.caption
-      horizontalAlignment: Text.AlignHCenter
     }
 
     Grid {
@@ -283,18 +259,6 @@ Item {
           text: "Lv " + (root.inspectItem
             ? Math.max(1, Math.floor(Number(root.inspectItem.level) || 1))
             : 1)
-          textFormat: Text.PlainText
-          color: root.dimForeground
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.caption
-          horizontalAlignment: Text.AlignHCenter
-        }
-
-        Text {
-          width: parent.width
-          visible: !root.inspectUnlocked && root.inspectItem
-          height: visible ? implicitHeight : 0
-          text: "keep practicing"
           textFormat: Text.PlainText
           color: root.dimForeground
           font.family: root.fontFamily
