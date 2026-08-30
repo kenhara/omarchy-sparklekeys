@@ -1,6 +1,6 @@
 # Sparklekeys — design notes
 
-**Status:** 0.5.0  
+**Status:** 0.6.0  
 **Id:** `kenhara.sparklekeys`  
 **Peers:** Scriptural, Rocketlauncher, Encyclopedic, Enricherino, Compliantish
 
@@ -9,48 +9,57 @@
 A six-year-old cannot hold "type O" and "look at my trophies" at once.
 Synthesis-style: one problem owns the screen. Play is the hunt — the target
 letter and the keyboard, nothing else. Trophies is a separate room: themed
-4×5 emoji boards that light up as she levels up. Tap an unlocked trophy to
-wear it on the bar chip. The chip is the persistent tray of who she is, so
-the hunt never shares a stage with the collection.
+4×5 emoji boards that light up as she levels up. Tap a trophy (locked or
+unlocked) to inspect it: a zoomed emoji, a title, and a short blurb. Unlocking
+also wears it on the bar chip. The chip is the persistent tray of who she is,
+so the hunt never shares a stage with the collection.
 
 0.1 persisted closet purchases she could not see. 0.2 made dress-up visible
 with Phosphor glyphs. 0.3 restaged hunt and closet as separate rooms. 0.4
 replaced the dressed-unicorn closet with IXL-style themed emoji boards
 (one friend per level, row of five). 0.5 fills each board to a 4×5 grid
 (20 trophies, four unlock per level), renames the room **Trophies**, and
-auto-opens the board for her current level. Play stays hunt-only. Greeting
-uses her saved name (Jane). Default selected trophy is the unicorn.
+auto-opens the board for her current level. 0.6 makes ✨ the product mark
+(header glyph and default bar wear), moves sparkles off the Sky board so it
+is not gray-while-worn, and adds in-room trophy inspect. Word Mode picks from
+a pack tier every 10 levels (many short words, still no Shift). Displayed
+level is uncapped (header can show Lv 21+); trophy boards still cap at 20.
+Play stays hunt-only. Greeting uses her saved name (Jane). Default selected
+trophy is sparkles.
 
 ## The pack is the world
 
 Nothing in the game logic is gendered or unicorn-specific. A pack is data:
 
-- practice words
+- practice words in 4 tiers (keys `"1"`..`"4"`), one tier every 10 levels
 - default accent / aura (static theme colors — pink for unicorn, ember for
   dragon). No rainbow hue timer.
 
-Unicorn is the default pack. Dragon is a stub so `characterPack: dragon`
-swaps words and accents with **zero logic changes**. Kid-facing Look / Hat /
-Friend cosmetics are gone from pack objects. Packs do not own the Trophies
-boards.
+Unicorn is the default pack. Dragon uses the same 4-tier word shape so
+`characterPack: dragon` swaps words and accents with **zero logic changes**.
+Kid-facing Look / Hat / Friend cosmetics are gone from pack objects. Packs
+do not own the Trophies boards.
 
 Built-in packs live in `PackLibrary.qml`. Access only through `get` / `ids` /
 `exists`. Trophy boards live in the same library (`board` / `friend` /
-`boardIds` / `boardForLevel`).
+`boardIds` / `boardForLevel`). `friend()` also resolves the identity mark
+`sparkles` (✨), which is not a board tile.
 
 ## Trophies boards
 
 Four boards of twenty (4 rows × 5 cols). Level formula is
-`1 + floor(totalEarned / 15)`, cap 20. Four trophies unlock per level,
-filling left-to-right, top-to-bottom. A board unlocks when she reaches that
-board's first trophy level (the previous board is complete at the same
-moment).
+`1 + floor(totalEarned / 15)` — do not slow stars. Displayed level (header,
+bar tooltip) is **uncapped**. `boardForLevel` / trophy unlocks still clamp
+at 20. After 20, Trophies stay complete (Wild board); the header can show
+Lv 21+. Four trophies unlock per level, filling left-to-right,
+top-to-bottom. A board unlocks when she reaches that board's first trophy
+level (the previous board is complete at the same moment).
 
 | Board   | Unlocks | Levels | 4 per level (ids) |
 |---------|---------|--------|-------------------|
 | Friends | Lv 1    | 1–5    | unicorn…front-chick |
 | Garden  | Lv 6    | 6–10   | blossom…tanabata |
-| Sky     | Lv 11   | 11–15  | star…wave |
+| Sky     | Lv 11   | 11–15  | star, fireworks…wave |
 | Wild    | Lv 16   | 16–20  | bear…whale2 |
 
 Wide-adoption emoji only (mostly Unicode 6.0; unicorn and sun-with-face are
@@ -61,10 +70,10 @@ Emoji `Text` must **not** set `font.family` to monospace / `contentFontFamily`
 the system color-emoji font (Noto Color Emoji) is used. Labels (Lv N, room
 chrome) can use `contentFontFamily`.
 
-`isFriendUnlocked(id)` is `level >= that trophy's level`.
+`isFriendUnlocked(id)` is `level >= that trophy's level` (identity `sparkles` is always unlocked).
 `isBoardUnlocked(id)` is `level >= that board's unlockLevel`.
 `boardForLevel(level)` is friends (1–5), garden (6–10), sky (11–15),
-wild (16–20).
+wild (16–20); the argument is clamped to 20 so Lv 21+ still opens Wild.
 `showBoardForLevel()` sets `currentBoardId` from `boardForLevel(store.level)`
 and bumps `boardRev`. Call it from `setViewMode("closet")`, when level
 increases while `viewMode` is closet, and on panel open if already in closet.
@@ -72,18 +81,38 @@ Do **not** snap back while she is paging Prev/Next in the same visit.
 
 Unlocks are level-gated only — do not spend stars to buy trophies.
 
-`selectedFriend` (default `unicorn`) persists. `selectedEmoji` /
+`selectedFriend` (default `sparkles`) persists. `selectedEmoji` /
 `selectedFriendLabel` are derived. `currentBoardId` is which board is
 showing (session-snapped on Trophies enter; still written in schema 3).
 `boardRev` bumps on select / page / award / snap so tiles refresh.
 
-Tap an unlocked trophy to select it (accent ring). Locked tiles: stone-gray
-background (not accent), emoji at ~0.22 opacity, `Lv N` caption. Color emoji
-cannot be tinted with `Text.color`; do not import `QtQuick.Effects` (a failed
-import would take down the panel). Unlocked tiles: full opacity, warmer
-accent-tinted tile. Next is only tappable when the next board is unlocked;
-otherwise dim it (`keep practicing` / `Lv 6`). Prev always works once she
-has left board 1.
+✨ is the **product mark**: always unlocked at level 1, identity-only (not a
+21st Friends tile, not a Sky tile). `PackLibrary.identity` is
+`{ id: "sparkles", label: "Sparkles", emoji: "✨", level: 1 }`; `friend()`
+looks there first so the bar chip can wear it. The Sky slot that used to be
+sparkles is fireworks `🎆` (`id: fireworks`, same level as that slot: 11).
+Unicorn stays a Friends-board trophy; it is no longer the default wear or
+header mark. Pack `characterPack: unicorn` is unchanged.
+
+Every board trophy (and identity sparkles) has a kid-simple `blurb`.
+
+Tap a tile (locked or unlocked) to open an in-room inspect overlay: dim
+scrim over the board, a card with a huge emoji (~3–4× tile size), **title**,
+and one or two short sentences. Unlocked: full-color emoji, and `selectFriend`
+so it wears on the bar. Locked: gray/faded emoji (same stone+opacity as
+tiles), real title + blurb, plus `Lv N` / keep practicing — do not wear a
+locked trophy. Close by tapping the scrim or a **Close** pill. Escape already
+closes the whole panel via PanelKeyCatcher; do not steal it for inspect.
+One inspect at a time; opening another tile replaces the card. Overlay sits
+on the Flickable viewport (not a new room, not a browser). Keep Prev/Next,
+Back to hunt, 4×5 grid, auto-open current-level board, Flickable.
+
+Locked tiles: stone-gray background (not accent), emoji at ~0.22 opacity,
+`Lv N` caption. Color emoji cannot be tinted with `Text.color`; do not
+import `QtQuick.Effects` (a failed import would take down the panel).
+Unlocked tiles: full opacity, warmer accent-tinted tile. Next is only
+tappable when the next board is unlocked; otherwise dim it
+(`keep practicing` / `Lv 6`). Prev always works once she has left board 1.
 
 Opening Trophies (and leveling up while that room is open) loads the board
 for her current level. Prev/Next still let her browse unlocked boards after
@@ -101,7 +130,7 @@ during a lesson.
 
 Two-line header so `Hi, Jane!` never clips:
 
-1. Title (tiny 🦄 Text, no Phosphor glyph) + Play | Trophies room switch
+1. Title (tiny ✨ Text, no `font.family`, no Phosphor glyph) + Play | Trophies room switch
    (Trophies is longer than Friends — size the switch so the label fits)
 2. Greeting on its own line (`Hi, Name!`, wrap, no ElideRight) with Lv,
    stars, and Sound on the right
@@ -125,6 +154,21 @@ A two-sided switch (Letters | Words) with a sliding selected pill. Only
 on Play, under the letter. Not a third TabPill. `persistSetting('startMode', …)` the same
 way Panel already persists schema knobs.
 
+Word Mode does **not** walk a flat `practiceWords` array. SparkleStore
+`ensureWord` / `nextWord` call `wordTierForLevel(level)` and pick **only**
+from that tier list (`practiceWords["1"]`..`"4"`). Tiers:
+
+| Levels | Tier | Length | Notes |
+|--------|------|--------|--------|
+| 1–10   | 1    | 3–4    | lots of words, not a tiny loop |
+| 11–20  | 2    | 4–5    | |
+| 21–30  | 3    | 5–6    | |
+| 31+    | 4    | 6–8    | last tier, still typeable |
+
+Crossing a tier boundary picks a new word from the new tier. Lowercase
+storage; match is still case-insensitive (no Shift). Unique within a tier
+is enough.
+
 ## Name
 
 First-open `askingName` flow stays. Centered field, no companion on the
@@ -138,7 +182,11 @@ remains unused). No `· tap name` subtitle.
 - Match compares `event.text.toLowerCase()` — she never needs Shift.
 - Big letter + keyboard hint carry Play. Emoji trophies carry the Trophies
   room and the bar chip (kid reads the picture; tiles are emoji-only, with
-  `Lv N` on locked).
+  `Lv N` on locked). Tap a tile to inspect (big emoji + title + blurb).
+- The +1 ⭐ award flash (and streak / word / daily variants) overlays the
+  letter. It must not live in the hunt Column with `visible`/`height`
+  0→implicitHeight — that shoves the keyboard down on a hit. Column height
+  stays constant.
 
 ## Progress lives in share, not cache
 
@@ -152,7 +200,7 @@ manifest schema.
 
 `schemaVersion` 3. Persist `selectedFriend` (and last-viewed `currentBoardId`
 for shape stability). Hydrate old `selectedFriend` ids that still exist
-(unicorn, cat, …). Unknown ids → unicorn. Hydrate old stars / name / stats.
+(unicorn, cat, sparkles, …). Unknown ids → sparkles. Hydrate old stars / name / stats.
 Ignore old `unlocked` / `equipped` / hat / skin for gameplay; do not wipe
 those file keys if present.
 
@@ -204,7 +252,7 @@ theme, no `pw-play`. `playHit(special)` from `awardStars` (which
 Cooldown 90 ms. Stop when `!panelOpen`. Default `soundEnabled` ON.
 In-panel Sound toggle via `persistSetting('soundEnabled', …)`.
 
-## Non-goals (0.5)
+## Non-goals (0.6)
 
 Network, multi-child profiles, marketplace submit, home-row curriculum,
 user-dropped packs, dressing-room cosmetics, Phosphor character overlays,

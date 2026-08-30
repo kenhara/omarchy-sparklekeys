@@ -191,7 +191,7 @@ BarWidget {
     fontSize: Style.font.caption
     horizontalMargin: 8.5
     tooltipText: {
-      var tip = "Sparklekeys · " + String(sparkleStore.selectedFriendLabel || "Unicorn")
+      var tip = "Sparklekeys · " + String(sparkleStore.selectedFriendLabel || "Sparkles")
       tip += " · Lv " + String(sparkleStore.level)
       tip += " · " + String(sparkleStore.stars)
       if (root.panelLoadError && root.panelLoadError.length) {
@@ -214,7 +214,7 @@ BarWidget {
     anchors.leftMargin: 8.5
     text: sparkleStore.selectedEmoji && sparkleStore.selectedEmoji.length
       ? sparkleStore.selectedEmoji
-      : "🦄"
+      : "✨"
     textFormat: Text.PlainText
     font.pixelSize: Style.font.caption
   }
