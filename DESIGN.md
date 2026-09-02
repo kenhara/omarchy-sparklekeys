@@ -1,6 +1,6 @@
 # Sparklekeys — design notes
 
-**Status:** 0.9.0  
+**Status:** 1.0.0  
 **Id:** `kenhara.sparklekeys`  
 **Peers:** Scriptural, Rocketlauncher, Encyclopedic, Enricherino, Compliantish
 
@@ -340,10 +340,10 @@ Volume 0.5. Stop when `!panelOpen`. Default `soundEnabled` ON. In-panel
 Sound toggle via `persistSetting('soundEnabled', …)`.
 
 
-## Marketplace listing (submit-prep)
+## Marketplace listing
 
-Submit-prep is in progress: live `preview.png` incoming, then file. Do not
-open a listing issue until Harris says so.
+v1 listing. Filing now as **Kids** / `education`, `kids`. Not listed until
+HANCORE publishes.
 
 - Category: **Kids** (exact spelling)
 - Tags: `education`, `kids` (1–3 allowed; do not add a third unless he asks)
@@ -351,7 +351,7 @@ open a listing issue until Harris says so.
 
 File against [`omacom/omarchy-plugin-marketplace`](https://github.com/omacom/omarchy-plugin-marketplace) using [SUBMISSION.md](https://github.com/omacom/omarchy-plugin-marketplace/blob/main/SUBMISSION.md). The HANCORE-linux repo redirects there.
 
-## Non-goals (0.9)
+## Non-goals (1.0)
 
 Network, multi-child profiles, home-row curriculum,
 user-dropped packs, dressing-room cosmetics, Phosphor character overlays,

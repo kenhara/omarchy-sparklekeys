@@ -7,12 +7,22 @@ Letter Hunt for a first keyboard. Type, earn trophies.
 **ID:** `kenhara.sparklekeys`  
 **Author:** Harris Kenny  
 **License:** MIT  
-**Version:** 0.9.0
+**Version:** 1.0.0
 
 **Repo:** https://github.com/kenhara/omarchy-sparklekeys
 
-**Marketplace (not listed yet):** will file as category **Kids**, tags `education` and `kids` after the live preview lands.
+**Marketplace (not listed yet):** this is the v1 listing. Filing now as category **Kids**, tags `education` and `kids`. Listed when HANCORE publishes.
 
+
+### 1.0.0
+
+- Marketplace `preview.png` is a live collage (profile, hunt, trophies).
+- Filing as category **Kids**, tags `education` and `kids`. In-shell
+  `barWidget.category` stays Widgets.
+- LICENSE is a stock MIT header so marketplace detect can read it
+  (Kenney CC0 credit stays in `sounds/ATTRIBUTION.txt`).
+- Card description: Kids letter hunt for a first keyboard. Type, earn
+  trophies.
 
 ### 0.9.0
 
@@ -315,7 +325,7 @@ No freedesktop theme chimes. Credit: [Kenney.nl](https://kenney.nl/assets/interf
 ## Layout
 
 ```
-manifest.json       # kenhara.sparklekeys @ 0.9.0
+manifest.json       # kenhara.sparklekeys @ 1.0.0
 qmldir
 BarWidget.qml       # bar chip (selected emoji) + Loader → Panel; owns SparkleStore
 Panel.qml           # KeyboardPanel + two-line header (Play|Trophies, greeting, Sound)
