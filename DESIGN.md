@@ -1,6 +1,6 @@
 # Sparklekeys — design notes
 
-**Status:** 0.9.0  
+**Status:** 1.0.0  
 **Id:** `kenhara.sparklekeys`  
 **Peers:** Scriptural, Rocketlauncher, Encyclopedic, Enricherino, Compliantish
 
@@ -339,9 +339,21 @@ allowlists all three. `hushSounds` stops all three. `miss()` is silence.
 Volume 0.5. Stop when `!panelOpen`. Default `soundEnabled` ON. In-panel
 Sound toggle via `persistSetting('soundEnabled', …)`.
 
-## Non-goals (0.9)
 
-Network, multi-child profiles, marketplace submit, home-row curriculum,
+## Marketplace listing
+
+v1 listing. Filing now as **Kids** / `education`, `kids`. Not listed until
+HANCORE publishes.
+
+- Category: **Kids** (exact spelling)
+- Tags: `education`, `kids` (1–3 allowed; do not add a third unless he asks)
+- In-shell `barWidget.category` stays **Widgets** (Omarchy loader allowlist is not the marketplace form)
+
+File against [`omacom/omarchy-plugin-marketplace`](https://github.com/omacom/omarchy-plugin-marketplace) using [SUBMISSION.md](https://github.com/omacom/omarchy-plugin-marketplace/blob/main/SUBMISSION.md). The HANCORE-linux repo redirects there.
+
+## Non-goals (1.0)
+
+Network, multi-child profiles, home-row curriculum,
 user-dropped packs, dressing-room cosmetics, Phosphor character overlays,
 tap-name, remote Image/SVG, CI / GitHub Actions, `QtQuick.Effects` (do not
 risk panel load), settings GUI, middle-click features. Progress helper is

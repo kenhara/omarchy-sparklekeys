@@ -1,13 +1,28 @@
 # Sparklekeys
 
+![Sparklekeys](preview.png)
+
 Letter Hunt for a first keyboard. Type, earn trophies.
 
 **ID:** `kenhara.sparklekeys`  
 **Author:** Harris Kenny  
 **License:** MIT  
-**Version:** 0.9.0
+**Version:** 1.0.0
 
 **Repo:** https://github.com/kenhara/omarchy-sparklekeys
+
+**Marketplace (not listed yet):** this is the v1 listing. Filing now as category **Kids**, tags `education` and `kids`. Listed when HANCORE publishes.
+
+
+### 1.0.0
+
+- Marketplace `preview.png` is a live collage (profile, hunt, trophies).
+- Filing as category **Kids**, tags `education` and `kids`. In-shell
+  `barWidget.category` stays Widgets.
+- LICENSE is a stock MIT header so marketplace detect can read it
+  (Kenney CC0 credit stays in `sounds/ATTRIBUTION.txt`).
+- Card description: Kids letter hunt for a first keyboard. Type, earn
+  trophies.
 
 ### 0.9.0
 
@@ -129,13 +144,17 @@ Letter Hunt for a first keyboard. Type, earn trophies.
 - Child types their name in-panel (first exercise). Greeting becomes `Hi, Name!`.
 - Unicorn pack + dragon stub. `characterPack` swaps the whole world.
 - Progress at `~/.local/share/sparklekeys/progress.json` (not cache).
-- Pure QML. No Python, no network.
+- Pure QML. No Python, no network. (0.1 snapshot; 0.8 added local `progress.py`. Still no network.)
 
 ## Discoverability
 
-Marketplace filing draft: category **Widgets** · tags `bar, quickshell`.
-Display name stays **Sparklekeys**. Top-level `keywords` and
-`barWidget.aliases` are for filing drafts — the bar-widget loader ignores them.
+Marketplace filing: category **Kids** · tags `education, kids`. In-shell
+`barWidget.category` stays **Widgets** for the Omarchy loader (allowlist;
+not the marketplace form). Display name stays **Sparklekeys**.
+
+Directory search at plugins.omarchy.org uses `manifest.description` plus
+filing tags. Top-level `keywords` and `barWidget.aliases` are not the
+catalog haystack.
 
 ## Install
 
@@ -306,7 +325,7 @@ No freedesktop theme chimes. Credit: [Kenney.nl](https://kenney.nl/assets/interf
 ## Layout
 
 ```
-manifest.json       # kenhara.sparklekeys @ 0.9.0
+manifest.json       # kenhara.sparklekeys @ 1.0.0
 qmldir
 BarWidget.qml       # bar chip (selected emoji) + Loader → Panel; owns SparkleStore
 Panel.qml           # KeyboardPanel + two-line header (Play|Trophies, greeting, Sound)
