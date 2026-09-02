@@ -5,7 +5,7 @@
   "version": "0.9.0",
   "author": "Harris Kenny",
   "license": "MIT",
-  "description": "Letter Hunt for a first keyboard. Type, earn trophies.",
+  "description": "Kids letter hunt for a first keyboard. Type, earn trophies.",
   "kinds": [
     "bar-widget"
   ],
@@ -21,6 +21,7 @@
     "letters",
     "keyboard",
     "kids",
+    "education",
     "child",
     "unicorn",
     "friends",
@@ -32,7 +33,7 @@
   ],
   "barWidget": {
     "displayName": "Sparklekeys",
-    "description": "Letter Hunt for a first keyboard. Type, earn trophies.",
+    "description": "Kids letter hunt for a first keyboard. Type, earn trophies.",
     "category": "Widgets",
     "allowMultiple": false,
     "defaultSection": "right",

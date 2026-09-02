@@ -1,5 +1,7 @@
 # Sparklekeys
 
+![Sparklekeys](preview.png)
+
 Letter Hunt for a first keyboard. Type, earn trophies.
 
 **ID:** `kenhara.sparklekeys`  
@@ -8,6 +10,9 @@ Letter Hunt for a first keyboard. Type, earn trophies.
 **Version:** 0.9.0
 
 **Repo:** https://github.com/kenhara/omarchy-sparklekeys
+
+**Marketplace (not listed yet):** will file as category **Kids**, tags `education` and `kids` after the live preview lands.
+
 
 ### 0.9.0
 
@@ -129,13 +134,17 @@ Letter Hunt for a first keyboard. Type, earn trophies.
 - Child types their name in-panel (first exercise). Greeting becomes `Hi, Name!`.
 - Unicorn pack + dragon stub. `characterPack` swaps the whole world.
 - Progress at `~/.local/share/sparklekeys/progress.json` (not cache).
-- Pure QML. No Python, no network.
+- Pure QML. No Python, no network. (0.1 snapshot; 0.8 added local `progress.py`. Still no network.)
 
 ## Discoverability
 
-Marketplace filing draft: category **Widgets** · tags `bar, quickshell`.
-Display name stays **Sparklekeys**. Top-level `keywords` and
-`barWidget.aliases` are for filing drafts — the bar-widget loader ignores them.
+Marketplace filing: category **Kids** · tags `education, kids`. In-shell
+`barWidget.category` stays **Widgets** for the Omarchy loader (allowlist;
+not the marketplace form). Display name stays **Sparklekeys**.
+
+Directory search at plugins.omarchy.org uses `manifest.description` plus
+filing tags. Top-level `keywords` and `barWidget.aliases` are not the
+catalog haystack.
 
 ## Install
 
