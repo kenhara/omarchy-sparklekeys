@@ -106,7 +106,9 @@ Item {
   })
   property string progressBuf: ""
   property bool progressOverflow: false
+  property bool progressReadTimedOut: false
   property string _pendingWriteJson: ""
+  readonly property int progressReadDeadlineMs: 10000
 
   readonly property string effectivePack: store.normalizePack(store.characterPack)
 
@@ -829,10 +831,18 @@ Item {
       return
     store.progressBuf = ""
     store.progressOverflow = false
+    store.progressReadTimedOut = false
+    progressReadDeadline.restart()
     progressReadProc.running = true
   }
 
   function onProgressReadFinished(exitCode) {
+    progressReadDeadline.stop()
+    if (store.progressReadTimedOut) {
+      store.progressBuf = ""
+      store.progressOverflow = false
+      return
+    }
     var over = store.progressOverflow
     var txt = store.progressBuf
     store.progressBuf = ""
@@ -847,6 +857,17 @@ Item {
       return
     }
     store.hydrate(txt)
+  }
+
+  function onProgressReadDeadline() {
+    if (!progressReadProc.running)
+      return
+    store.progressReadTimedOut = true
+    store.progressBuf = ""
+    store.progressOverflow = false
+    try { progressReadProc.running = false } catch (e) {}
+    console.warn("kenhara.sparklekeys: progress read deadline — seeding defaults")
+    store.seedDefaults()
   }
 
   function flushSave() {
@@ -937,7 +958,14 @@ Item {
   Process {
     id: progressReadProc
     running: false
-    command: ["/usr/bin/python3", "-B", store.helperPath, "--file", store.progressPath, "--cap", String(store.maxProgressBytes)]
+    // /usr/bin/timeout supervises the helper process group (SIGTERM then SIGKILL).
+    // running=false alone is not whole-tree termination; the wrapper is.
+    command: [
+      "/usr/bin/timeout", "--kill-after=2s", "8s",
+      "/usr/bin/python3", "-B", store.helperPath,
+      "--file", store.progressPath,
+      "--cap", String(store.maxProgressBytes)
+    ]
     environment: store.helperEnv
     stdout: SplitParser {
       splitMarker: ""
@@ -947,6 +975,7 @@ Item {
         if (store.progressBuf.length + String(chunk || "").length > store.maxHelperOutput) {
           store.progressOverflow = true
           store.progressBuf = ""
+          progressReadDeadline.stop()
           progressReadProc.running = false
           return
         }
@@ -956,6 +985,13 @@ Item {
     onExited: function(exitCode, exitStatus) {
       store.onProgressReadFinished(exitCode)
     }
+  }
+
+  Timer {
+    id: progressReadDeadline
+    interval: store.progressReadDeadlineMs
+    repeat: false
+    onTriggered: store.onProgressReadDeadline()
   }
 
   Process {
