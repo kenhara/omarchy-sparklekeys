@@ -7,12 +7,34 @@ Letter Hunt for a first keyboard. Type, earn trophies.
 **ID:** `kenhara.sparklekeys`  
 **Author:** Harris Kenny  
 **License:** MIT  
-**Version:** 1.0.0
+**Version:** 1.0.2
 
 **Repo:** https://github.com/kenhara/omarchy-sparklekeys
 
 **Marketplace (not listed yet):** this is the v1 listing. Filing now as category **Kids**, tags `education` and `kids`. Listed when HANCORE publishes.
 
+
+### 1.0.2
+
+- Resubmission for marketplace review #4406. Resolves the four
+  filesystem-boundary findings from that review, all in
+  `scripts/progress.py` + `SparkleStore.qml`:
+  1. Path creation walks `$HOME → data-home → sparklekeys` with retained
+     `O_DIRECTORY|O_NOFOLLOW` dirfds; dirs are made with `mkdir(dir_fd=)`
+     and tightened with `fchmod(fd)` — never `makedirs`/`chmod` on a
+     pathname (kills symlink redirection).
+  2. `read_cache()` validates every ancestor via the NOFOLLOW dirfd walk,
+     not just the leaf pathname.
+  3. Atomic write adds a fail-closed directory `fsync` after `renameat`.
+  4. The QML `progressReadProc` runs under `/usr/bin/timeout
+     --kill-after=2s 8s …` plus a 10s read deadline that falls back to
+     defaults — no hang path.
+- `scripts/prove-progress.sh` proves each of the above (leaf/dir symlink
+  refusal, FIFO no-hang, oversize rejection, path validation, trusted-dir
+  enforcement, stdin-only, write round-trip). See `SECURITY-FIXES-4406.md`
+  for the finding→fix→proof map.
+- Version sync: manifest / README / DESIGN all read 1.0.2 (the 1.0.1
+  hardening commit had bumped only the manifest). No gameplay change.
 
 ### 1.0.0
 
@@ -325,7 +347,7 @@ No freedesktop theme chimes. Credit: [Kenney.nl](https://kenney.nl/assets/interf
 ## Layout
 
 ```
-manifest.json       # kenhara.sparklekeys @ 1.0.0
+manifest.json       # kenhara.sparklekeys @ 1.0.2
 qmldir
 BarWidget.qml       # bar chip (selected emoji) + Loader → Panel; owns SparkleStore
 Panel.qml           # KeyboardPanel + two-line header (Play|Trophies, greeting, Sound)

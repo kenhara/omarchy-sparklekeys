@@ -1,6 +1,6 @@
 # Sparklekeys — design notes
 
-**Status:** 1.0.0  
+**Status:** 1.0.2  
 **Id:** `kenhara.sparklekeys`  
 **Peers:** Scriptural, Rocketlauncher, Encyclopedic, Enricherino, Compliantish
 
